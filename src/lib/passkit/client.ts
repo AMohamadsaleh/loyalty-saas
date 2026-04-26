@@ -1,13 +1,35 @@
+import { createHmac } from 'crypto';
 import type { Merchant } from '@/types';
 
-// PassKit Cloud REST API - EU instance (pub1) and US instance (pub2)
 const API_BASE = 'https://api.pub1.passkit.io';
 const PASS_BASE = 'https://pub1.pskt.io';
+
+function makeJWT(): string {
+  const key = process.env.PASSKIT_KEY ?? process.env.PASSKIT_API_KEY ?? '';
+  const secret = process.env.PASSKIT_SECRET ?? '';
+
+  // If no secret, fall back to treating key as a raw Bearer token
+  if (!secret) {
+    return key;
+  }
+
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  const payload = Buffer.from(JSON.stringify({ uid: key, iat: now, exp: now + 3600 })).toString('base64url');
+
+  // PassKit secrets are base64-encoded binary
+  const secretBytes = Buffer.from(secret, 'base64');
+  const sig = createHmac('sha256', secretBytes)
+    .update(`${header}.${payload}`)
+    .digest('base64url');
+
+  return `${header}.${payload}.${sig}`;
+}
 
 function headers() {
   return {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${process.env.PASSKIT_API_KEY}`,
+    Authorization: `Bearer ${makeJWT()}`,
   };
 }
 
