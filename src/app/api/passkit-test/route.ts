@@ -14,21 +14,7 @@ export async function GET() {
   const base = 'https://api.pub1.passkit.io';
   const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` };
 
-  // Step 1: list tiers for this program to find the tierId
-  try {
-    const r = await fetch(`${base}/members/tier/list`, {
-      method: 'POST',
-      headers: h,
-      body: JSON.stringify({ programId }),
-      signal: AbortSignal.timeout(10000),
-    });
-    const text = await r.text();
-    results['tier list'] = { status: r.status, body: text.slice(0, 1000) };
-  } catch (err) {
-    results['tier list'] = { error: String(err) };
-  }
-
-  // Step 2: get program details
+  // Get full program details (may include tier info)
   try {
     const r = await fetch(`${base}/members/program/${programId}`, {
       method: 'GET',
@@ -36,25 +22,27 @@ export async function GET() {
       signal: AbortSignal.timeout(10000),
     });
     const text = await r.text();
-    results['program details'] = { status: r.status, body: text.slice(0, 1000) };
+    results['program details (full)'] = { status: r.status, body: text };
   } catch (err) {
-    results['program details'] = { error: String(err) };
+    results['program details (full)'] = { error: String(err) };
   }
 
-  // Step 3: try enrol with common tier IDs
-  for (const tierId of ['default', 'standard', 'member', 'bronze', programId ?? '']) {
+  // Try alternate tier list endpoints
+  for (const path of [
+    `/members/tiers/program/${programId}`,
+    `/members/tier/program/${programId}`,
+    `/members/programs/${programId}/tiers`,
+  ]) {
     try {
-      const r = await fetch(`${base}/members/member`, {
-        method: 'POST',
+      const r = await fetch(`${base}${path}`, {
+        method: 'GET',
         headers: h,
-        body: JSON.stringify({ programId, tierId, externalId: `probe_${tierId}`, points: 0 }),
         signal: AbortSignal.timeout(10000),
       });
       const text = await r.text();
-      results[`enrol tierId=${tierId}`] = { status: r.status, body: text.slice(0, 500) };
-      if (r.ok) break; // stop on first success
+      results[`GET ${path}`] = { status: r.status, body: text.slice(0, 500) };
     } catch (err) {
-      results[`enrol tierId=${tierId}`] = { error: String(err) };
+      results[`GET ${path}`] = { error: String(err) };
     }
   }
 
