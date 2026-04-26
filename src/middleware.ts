@@ -7,7 +7,7 @@ export function middleware(req: NextRequest) {
   const isProtected = PROTECTED.some((r) => pathname.startsWith(r));
   if (!isProtected) return NextResponse.next();
 
-  const session = req.cookies.get('session')?.value;
+  const session = req.cookies.get('session')?.value ?? req.cookies.get('auth')?.value;
   if (!session) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
