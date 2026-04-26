@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
   // 10. Update PassKit pass (outside Firestore transaction — network call)
   try {
     await updateLoyaltyPass(
-      result.passId,
+      membershipId,
       result.newStamps,
       result.merchant.stampTarget,
       result.merchant.rewardName
