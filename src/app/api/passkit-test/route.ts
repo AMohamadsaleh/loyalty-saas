@@ -8,49 +8,56 @@ export async function GET() {
 
   const results: Record<string, unknown> = {
     apiKeySet: !!apiKey,
+    apiKeyPrefix: apiKey?.slice(0, 20) + '...',
     programId,
-    apiKeyPrefix: apiKey?.slice(0, 12) + '...',
   };
 
-  // Try multiple base URLs and auth formats
-  const attempts = [
+  const endpoints = [
     {
-      label: 'api.passkit.net Bearer',
-      url: `https://api.passkit.net/v1/pass/issue/single/${programId}`,
+      label: 'pub1 GET member list',
+      url: `https://api.pub1.passkit.io/members/member/list/${programId}`,
+      method: 'POST',
       auth: `Bearer ${apiKey}`,
+      body: JSON.stringify({ programId }),
     },
     {
-      label: 'api.passkit.com Bearer',
-      url: `https://api.passkit.com/v1/pass/issue/single/${programId}`,
+      label: 'pub2 GET member list',
+      url: `https://api.pub2.passkit.io/members/member/list/${programId}`,
+      method: 'POST',
       auth: `Bearer ${apiKey}`,
+      body: JSON.stringify({ programId }),
     },
     {
-      label: 'api.passkit.net Basic',
-      url: `https://api.passkit.net/v1/pass/issue/single/${programId}`,
-      auth: `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`,
+      label: 'pub1 enrol member (test)',
+      url: `https://api.pub1.passkit.io/members/member`,
+      method: 'POST',
+      auth: `Bearer ${apiKey}`,
+      body: JSON.stringify({ programId, externalId: `test_${Date.now()}`, points: 0 }),
+    },
+    {
+      label: 'pub2 enrol member (test)',
+      url: `https://api.pub2.passkit.io/members/member`,
+      method: 'POST',
+      auth: `Bearer ${apiKey}`,
+      body: JSON.stringify({ programId, externalId: `test_${Date.now()}`, points: 0 }),
     },
   ];
 
-  for (const attempt of attempts) {
+  for (const ep of endpoints) {
     try {
-      const res = await fetch(attempt.url, {
-        method: 'POST',
+      const res = await fetch(ep.url, {
+        method: ep.method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: attempt.auth,
+          Authorization: ep.auth,
         },
-        body: JSON.stringify({
-          barcodeContent: 'test-membership-id',
-        }),
+        body: ep.body,
+        signal: AbortSignal.timeout(10000),
       });
-
       const text = await res.text();
-      results[attempt.label] = {
-        status: res.status,
-        response: text.slice(0, 500),
-      };
+      results[ep.label] = { status: res.status, body: text.slice(0, 500) };
     } catch (err) {
-      results[attempt.label] = { error: String(err) };
+      results[ep.label] = { error: String(err) };
     }
   }
 

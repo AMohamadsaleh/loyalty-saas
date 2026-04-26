@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   let passError: string | null = null;
 
   try {
-    const pass = await createLoyaltyPass(membershipId, merchant);
+    const pass = await createLoyaltyPass(membershipId, merchant, name || undefined, phone || undefined);
     passId = pass.passId;
     passUrl = pass.passUrl;
   } catch (err) {
