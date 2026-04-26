@@ -45,6 +45,11 @@ export async function createLoyaltyPass(
     externalId: membershipId,
     points: 0,
     secondaryPoints: merchant.stampTarget,
+    metaData: {
+      stampProgress: `0 / ${merchant.stampTarget} stamps`,
+      reward: merchant.rewardName,
+      store: merchant.name,
+    },
   };
 
   if (customerName || customerPhone) {
@@ -82,16 +87,19 @@ export async function updateLoyaltyPass(
   stampTarget: number,
   rewardName: string
 ): Promise<void> {
+  const isReset = stamps === 0;
   const body: Record<string, unknown> = {
     programId: process.env.PASSKIT_PROGRAM_ID,
     externalId,
     points: stamps,
     secondaryPoints: stampTarget,
+    metaData: {
+      stampProgress: isReset
+        ? `Reward unlocked! 0 / ${stampTarget} stamps`
+        : `${stamps} / ${stampTarget} stamps`,
+      reward: rewardName,
+    },
   };
-
-  if (stamps === 0) {
-    body.metaData = { lastReward: rewardName };
-  }
 
   const res = await fetch(`${API_BASE}/members/member`, {
     method: 'PUT',

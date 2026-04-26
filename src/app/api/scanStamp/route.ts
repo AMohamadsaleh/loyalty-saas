@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { getMerchant } from '@/lib/firestore/merchants';
+import { getMembership, getMembershipByPassId } from '@/lib/firestore/memberships';
 import { stampImageUrl } from '@/lib/utils/stampImageUrl';
 import { isCooldownActive, isDailyLimitReached, todayString } from '@/lib/utils/scanValidation';
 import { updateLoyaltyPass } from '@/lib/passkit/client';
@@ -21,8 +22,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  const { membershipId } = await req.json();
-  if (!membershipId) return NextResponse.json({ error: 'Missing membershipId' }, { status: 400 });
+  const { membershipId: scannedId } = await req.json();
+  if (!scannedId) return NextResponse.json({ error: 'Missing membershipId' }, { status: 400 });
+
+  // Resolve the real Firestore membership ID.
+  // If the pass barcode uses PassKit's ${pid} instead of ${eid}, the scanned value
+  // is the PassKit internal ID — fall back to a passId lookup.
+  let membershipId = scannedId;
+  const direct = await getMembership(scannedId);
+  if (!direct) {
+    const byPassId = await getMembershipByPassId(scannedId);
+    if (!byPassId) return NextResponse.json({ error: 'Membership not found' }, { status: 404 });
+    membershipId = byPassId.id;
+  }
 
   // Use Firestore transaction to prevent race conditions
   const membershipRef = adminDb.doc(`memberships/${membershipId}`);
