@@ -2,49 +2,66 @@ export const runtime = 'nodejs';
 
 import { NextResponse } from 'next/server';
 
+const BASE = 'https://api.pub1.passkit.io';
+
+function h() {
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.PASSKIT_API_KEY}` };
+}
+
+// GET — list all members so we can see who is consuming the quota
 export async function GET() {
-  const apiKey = process.env.PASSKIT_API_KEY;
-  const programId = process.env.PASSKIT_PROGRAM_ID;
-
-  const base = 'https://api.pub1.passkit.io';
-  const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` };
-
+  const programId = process.env.PASSKIT_PROGRAM_ID ?? '';
   const results: Record<string, unknown> = { programId };
 
-  // Test exact body that createLoyaltyPass sends
-  const externalId = `diag_${Date.now()}`;
   try {
-    const r = await fetch(`${base}/members/member`, {
+    const r = await fetch(`${BASE}/members/member/list/${programId}`, {
       method: 'POST',
-      headers: h,
-      body: JSON.stringify({
-        programId,
-        tierId: process.env.PASSKIT_TIER_ID ?? 'base',
-        externalId,
-        points: 0,
-        secondaryPoints: 6,
-        metaData: {
-          stampProgress: '0 / 6 stamps',
-          reward: 'Free Coffee',
-          store: 'Test Store',
-        },
-        person: { displayName: 'Diag User' },
-      }),
+      headers: h(),
+      body: JSON.stringify({ programId, pageSize: 50 }),
       signal: AbortSignal.timeout(10000),
     });
     const text = await r.text();
-    results['enrol'] = { status: r.status, body: text };
-
-    // If enrol succeeded, check what the pass URL looks like
-    if (r.ok) {
-      const data = JSON.parse(text);
-      results['passId'] = data.id;
-      results['passUrl'] = `https://pub1.pskt.io/${data.id}`;
-      results['appleUrl'] = `https://pub1.pskt.io/${data.id}.pkpass`;
-      results['googleUrl'] = `https://pub1.pskt.io/${data.id}.gpay`;
-    }
+    results['members'] = { status: r.status, body: text };
   } catch (err) {
-    results['enrol'] = { error: String(err) };
+    results['members'] = { error: String(err) };
+  }
+
+  return NextResponse.json(results, { status: 200 });
+}
+
+// DELETE — wipe ALL members for this program (clears quota)
+export async function DELETE() {
+  const programId = process.env.PASSKIT_PROGRAM_ID ?? '';
+  const results: Record<string, unknown> = {};
+
+  // List first
+  const listRes = await fetch(`${BASE}/members/member/list/${programId}`, {
+    method: 'POST',
+    headers: h(),
+    body: JSON.stringify({ programId, pageSize: 50 }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  if (!listRes.ok) {
+    return NextResponse.json({ error: `List failed: ${await listRes.text()}` }, { status: 500 });
+  }
+
+  const listData = await listRes.json();
+  const members: Array<{ id: string; externalId: string }> = listData.members ?? listData ?? [];
+  results['found'] = members.length;
+  results['deleted'] = [];
+
+  for (const m of members) {
+    const eid = m.externalId ?? m.id;
+    try {
+      const r = await fetch(
+        `${BASE}/members/member?programId=${encodeURIComponent(programId)}&externalId=${encodeURIComponent(eid)}`,
+        { method: 'DELETE', headers: h(), signal: AbortSignal.timeout(8000) }
+      );
+      (results['deleted'] as string[]).push(`${eid}: ${r.status}`);
+    } catch (err) {
+      (results['deleted'] as string[]).push(`${eid}: error ${err}`);
+    }
   }
 
   return NextResponse.json(results, { status: 200 });
