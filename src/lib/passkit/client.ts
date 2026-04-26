@@ -19,6 +19,7 @@ export async function createLoyaltyPass(
 ): Promise<{ passId: string; passUrl: string }> {
   const body: Record<string, unknown> = {
     programId: process.env.PASSKIT_PROGRAM_ID,
+    tierId: process.env.PASSKIT_TIER_ID ?? 'base',
     externalId: membershipId,
     points: 0,
     secondaryPoints: merchant.stampTarget,

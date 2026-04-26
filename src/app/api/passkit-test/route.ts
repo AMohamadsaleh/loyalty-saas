@@ -14,36 +14,24 @@ export async function GET() {
   const base = 'https://api.pub1.passkit.io';
   const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` };
 
-  // Get full program details (may include tier info)
+  // Try enrol with tierId=base
   try {
-    const r = await fetch(`${base}/members/program/${programId}`, {
-      method: 'GET',
+    const r = await fetch(`${base}/members/member`, {
+      method: 'POST',
       headers: h,
+      body: JSON.stringify({
+        programId,
+        tierId: 'base',
+        externalId: `test_${Date.now()}`,
+        points: 0,
+        person: { displayName: 'Test User' },
+      }),
       signal: AbortSignal.timeout(10000),
     });
     const text = await r.text();
-    results['program details (full)'] = { status: r.status, body: text };
+    results['enrol with tierId=base'] = { status: r.status, body: text };
   } catch (err) {
-    results['program details (full)'] = { error: String(err) };
-  }
-
-  // Try alternate tier list endpoints
-  for (const path of [
-    `/members/tiers/program/${programId}`,
-    `/members/tier/program/${programId}`,
-    `/members/programs/${programId}/tiers`,
-  ]) {
-    try {
-      const r = await fetch(`${base}${path}`, {
-        method: 'GET',
-        headers: h,
-        signal: AbortSignal.timeout(10000),
-      });
-      const text = await r.text();
-      results[`GET ${path}`] = { status: r.status, body: text.slice(0, 500) };
-    } catch (err) {
-      results[`GET ${path}`] = { error: String(err) };
-    }
+    results['enrol with tierId=base'] = { error: String(err) };
   }
 
   return NextResponse.json(results, { status: 200 });
