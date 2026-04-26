@@ -111,8 +111,7 @@ export async function POST(req: NextRequest) {
       result.passId,
       result.newStamps,
       result.merchant.stampTarget,
-      result.merchant.rewardName,
-      result.imageUrl
+      result.merchant.rewardName
     );
   } catch {
     // Pass update failure is non-critical — stamp is already recorded
