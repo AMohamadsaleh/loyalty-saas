@@ -8,56 +8,53 @@ export async function GET() {
 
   const results: Record<string, unknown> = {
     apiKeySet: !!apiKey,
-    apiKeyPrefix: apiKey?.slice(0, 20) + '...',
     programId,
   };
 
-  const endpoints = [
-    {
-      label: 'pub1 GET member list',
-      url: `https://api.pub1.passkit.io/members/member/list/${programId}`,
-      method: 'POST',
-      auth: `Bearer ${apiKey}`,
-      body: JSON.stringify({ programId }),
-    },
-    {
-      label: 'pub2 GET member list',
-      url: `https://api.pub2.passkit.io/members/member/list/${programId}`,
-      method: 'POST',
-      auth: `Bearer ${apiKey}`,
-      body: JSON.stringify({ programId }),
-    },
-    {
-      label: 'pub1 enrol member (test)',
-      url: `https://api.pub1.passkit.io/members/member`,
-      method: 'POST',
-      auth: `Bearer ${apiKey}`,
-      body: JSON.stringify({ programId, externalId: `test_${Date.now()}`, points: 0 }),
-    },
-    {
-      label: 'pub2 enrol member (test)',
-      url: `https://api.pub2.passkit.io/members/member`,
-      method: 'POST',
-      auth: `Bearer ${apiKey}`,
-      body: JSON.stringify({ programId, externalId: `test_${Date.now()}`, points: 0 }),
-    },
-  ];
+  const base = 'https://api.pub1.passkit.io';
+  const h = { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` };
 
-  for (const ep of endpoints) {
+  // Step 1: list tiers for this program to find the tierId
+  try {
+    const r = await fetch(`${base}/members/tier/list`, {
+      method: 'POST',
+      headers: h,
+      body: JSON.stringify({ programId }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const text = await r.text();
+    results['tier list'] = { status: r.status, body: text.slice(0, 1000) };
+  } catch (err) {
+    results['tier list'] = { error: String(err) };
+  }
+
+  // Step 2: get program details
+  try {
+    const r = await fetch(`${base}/members/program/${programId}`, {
+      method: 'GET',
+      headers: h,
+      signal: AbortSignal.timeout(10000),
+    });
+    const text = await r.text();
+    results['program details'] = { status: r.status, body: text.slice(0, 1000) };
+  } catch (err) {
+    results['program details'] = { error: String(err) };
+  }
+
+  // Step 3: try enrol with common tier IDs
+  for (const tierId of ['default', 'standard', 'member', 'bronze', programId ?? '']) {
     try {
-      const res = await fetch(ep.url, {
-        method: ep.method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: ep.auth,
-        },
-        body: ep.body,
+      const r = await fetch(`${base}/members/member`, {
+        method: 'POST',
+        headers: h,
+        body: JSON.stringify({ programId, tierId, externalId: `probe_${tierId}`, points: 0 }),
         signal: AbortSignal.timeout(10000),
       });
-      const text = await res.text();
-      results[ep.label] = { status: res.status, body: text.slice(0, 500) };
+      const text = await r.text();
+      results[`enrol tierId=${tierId}`] = { status: r.status, body: text.slice(0, 500) };
+      if (r.ok) break; // stop on first success
     } catch (err) {
-      results[ep.label] = { error: String(err) };
+      results[`enrol tierId=${tierId}`] = { error: String(err) };
     }
   }
 
