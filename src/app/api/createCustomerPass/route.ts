@@ -41,13 +41,17 @@ export async function POST(req: NextRequest) {
   const membershipId = crypto.randomUUID();
 
   let passId = membershipId;
-  let passUrl = '';
+  let passUrl: string | null = null;
+  let passError: string | null = null;
+
   try {
     const pass = await createLoyaltyPass(membershipId, merchant);
     passId = pass.passId;
     passUrl = pass.passUrl;
-  } catch {
-    // PassKit not configured yet — continue without pass
+  } catch (err) {
+    // Log the real error so it shows in Vercel logs
+    passError = err instanceof Error ? err.message : String(err);
+    console.error('[PassKit] createLoyaltyPass failed:', passError);
   }
 
   await createMembership(membershipId, {
@@ -62,5 +66,6 @@ export async function POST(req: NextRequest) {
     createdAt: Date.now(),
   });
 
-  return NextResponse.json({ membershipId, passUrl, existing: false });
+  // Always return membershipId — passUrl is null if PassKit not configured
+  return NextResponse.json({ membershipId, passUrl, passError, existing: false });
 }

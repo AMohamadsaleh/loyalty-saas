@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { WalletButtons } from './WalletButtons';
 import type { Merchant } from '@/types';
 
@@ -8,12 +8,50 @@ interface Props {
   merchant: Merchant;
 }
 
+interface Result {
+  membershipId: string;
+  passUrl: string | null;
+}
+
+function MembershipQR({ membershipId, merchant }: { membershipId: string; merchant: Merchant }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    import('qrcode').then((QRCode) => {
+      QRCode.toCanvas(canvasRef.current!, membershipId, {
+        width: 200,
+        margin: 2,
+        color: { dark: '#0f172a', light: '#ffffff' },
+      });
+    });
+  }, [membershipId]);
+
+  return (
+    <div className="text-center space-y-4">
+      <div className="text-4xl">✅</div>
+      <p className="text-lg font-bold text-slate-900">You&apos;re registered!</p>
+      <p className="text-sm text-slate-500">Show this QR code at the counter to collect stamps</p>
+
+      <div className="flex justify-center bg-white rounded-xl p-4 border-2 border-slate-200 shadow-sm">
+        <canvas ref={canvasRef} className="rounded-lg" />
+      </div>
+
+      <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+        <p className="text-xs text-slate-400 font-mono break-all">{membershipId}</p>
+      </div>
+
+      <p className="text-xs text-slate-400">{merchant.name} loyalty card</p>
+    </div>
+  );
+}
+
 export function JoinForm({ merchant }: Props) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [passUrl, setPassUrl] = useState<string | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +66,7 @@ export function JoinForm({ merchant }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong');
-      setPassUrl(data.passUrl ?? 'https://example.com/pass');
+      setResult({ membershipId: data.membershipId, passUrl: data.passUrl ?? null });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create pass');
     } finally {
@@ -36,8 +74,19 @@ export function JoinForm({ merchant }: Props) {
     }
   }
 
-  if (passUrl) {
-    return <WalletButtons passUrl={passUrl} merchantName={merchant.name} />;
+  // Show wallet buttons if PassKit returned a real URL
+  if (result?.passUrl) {
+    return (
+      <div className="space-y-4">
+        <WalletButtons passUrl={result.passUrl} merchantName={merchant.name} />
+        <MembershipQR membershipId={result.membershipId} merchant={merchant} />
+      </div>
+    );
+  }
+
+  // Show QR code only (PassKit not configured or failed)
+  if (result?.membershipId) {
+    return <MembershipQR membershipId={result.membershipId} merchant={merchant} />;
   }
 
   return (
