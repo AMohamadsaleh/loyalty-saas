@@ -106,6 +106,13 @@ export async function POST(req: NextRequest) {
     };
     tx.set(txRef, transactionData);
 
+    // Fetch customer name for PassKit update (outside transaction read is fine here)
+    let customerName: string | undefined;
+    try {
+      const custSnap = await adminDb.doc(`customers/${membership.customerId}`).get();
+      customerName = custSnap.exists ? (custSnap.data()?.name as string | undefined) : undefined;
+    } catch { /* non-critical */ }
+
     return {
       progressText,
       imageUrl,
@@ -114,6 +121,7 @@ export async function POST(req: NextRequest) {
       passId: membership.passId,
       merchant,
       newStamps,
+      customerName,
     };
   });
 
@@ -123,7 +131,8 @@ export async function POST(req: NextRequest) {
       membershipId,
       result.newStamps,
       result.merchant.stampTarget,
-      result.merchant.rewardName
+      result.merchant.rewardName,
+      result.customerName
     );
   } catch {
     // Pass update failure is non-critical — stamp is already recorded
