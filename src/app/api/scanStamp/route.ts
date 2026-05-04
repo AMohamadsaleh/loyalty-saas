@@ -165,7 +165,15 @@ export async function POST(req: NextRequest) {
     };
   });
 
-  // 10. Update PassKit pass (outside Firestore transaction — network call)
+  // 10. Update PassKit pass (outside Firestore transaction - network call)
+  if (!result.merchant.passkitStampImages?.[result.newStamps]) {
+    console.warn('[PassKit] no stamp image IDs configured for stamp count:', {
+      merchantId: result.merchant.id,
+      stampCount: result.newStamps,
+      configuredImages: result.merchant.passkitStampImages?.length ?? 0,
+    });
+  }
+
   try {
     await updateLoyaltyPass(
       membershipId,
@@ -176,8 +184,10 @@ export async function POST(req: NextRequest) {
       result.merchant.passkitProgramId,
       result.merchant.passkitStampImages
     );
-  } catch {
-    // Pass update failure is non-critical — stamp is already recorded
+  } catch (err: unknown) {
+    // Pass update failure is non-critical - stamp is already recorded.
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[PassKit] updateLoyaltyPass failed:', message);
   }
 
   return NextResponse.json({

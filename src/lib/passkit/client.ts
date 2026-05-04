@@ -32,14 +32,18 @@ function stampImageIds(stamps: number, images?: Array<{ strip: string; hero: str
   return images?.[stamps] ?? null;
 }
 
+function configuredValue(value: string | undefined, fallback: string | undefined): string | undefined {
+  return value?.trim() || fallback?.trim() || undefined;
+}
+
 export async function createLoyaltyPass(
   membershipId: string,
   merchant: Merchant,
   customerName?: string,
   customerPhone?: string
 ): Promise<{ passId: string; passUrl: string }> {
-  const programId = merchant.passkitProgramId ?? process.env.PASSKIT_PROGRAM_ID;
-  const tierId    = merchant.passkitTierId    ?? process.env.PASSKIT_TIER_ID ?? '222';
+  const programId = configuredValue(merchant.passkitProgramId, process.env.PASSKIT_PROGRAM_ID);
+  const tierId = configuredValue(merchant.passkitTierId, process.env.PASSKIT_TIER_ID) ?? '222';
 
   if (!programId) throw new Error('No PassKit program ID configured for this merchant');
 
@@ -98,7 +102,7 @@ export async function updateLoyaltyPass(
 ): Promise<void> {
   const remaining = stampTarget - stamps;
   const rewardUnlocked = stamps === 0 && remaining === stampTarget;
-  const programId = passkitProgramId ?? process.env.PASSKIT_PROGRAM_ID;
+  const programId = configuredValue(passkitProgramId, process.env.PASSKIT_PROGRAM_ID);
 
   const nameParts = (customerName ?? '').trim().split(' ');
 
@@ -122,6 +126,8 @@ export async function updateLoyaltyPass(
         : `${remaining} more visit${remaining === 1 ? '' : 's'} for ${rewardName}`,
     },
   };
+
+  if (!programId) throw new Error('No PassKit program ID configured for pass update');
 
   const imgIds = stampImageIds(stamps, stampImages);
   if (imgIds) {
