@@ -14,5 +14,12 @@ service firebase.storage {
       allow write: if request.auth != null
                    && request.auth.token.merchantId == merchantId;
     }
+
+    // PassKit stamp images: public read so PassKit servers can fetch the URL, merchant-owner write
+    match /passkit-images/{merchantId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.auth.uid == merchantId;
+    }
   }
 }

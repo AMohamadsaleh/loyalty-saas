@@ -4,9 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { uploadPassKitImage } from '@/lib/passkit/client';
 
-// Vercel serverless body limit is 4.5 MB; a 3 MB image becomes ~4 MB base64 — warn early
-const MAX_BASE64_BYTES = 4 * 1024 * 1024; // 4 MB
-
 export async function POST(req: NextRequest) {
   const bearer = req.headers.get('authorization')?.replace('Bearer ', '');
   if (!bearer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,29 +16,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  let body: { imageBase64?: unknown; stampIndex?: unknown; name?: unknown };
+  let body: { imageUrl?: unknown; stampIndex?: unknown; name?: unknown };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { imageBase64, stampIndex, name } = body;
-  if (typeof imageBase64 !== 'string' || typeof stampIndex !== 'number') {
-    return NextResponse.json({ error: 'Missing imageBase64 or stampIndex' }, { status: 400 });
-  }
-
-  // Strip data URL prefix if present
-  const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-
-  if (Buffer.byteLength(base64Data, 'base64') > MAX_BASE64_BYTES) {
-    return NextResponse.json({ error: 'Image too large — keep under 3 MB' }, { status: 413 });
+  const { imageUrl, stampIndex, name } = body;
+  if (typeof imageUrl !== 'string' || typeof stampIndex !== 'number') {
+    return NextResponse.json({ error: 'Missing imageUrl or stampIndex' }, { status: 400 });
   }
 
   const imageName = typeof name === 'string' ? name : `merchant_${merchantUid}_stamp_${stampIndex}`;
 
   try {
-    const imageId = await uploadPassKitImage(base64Data, imageName);
+    const imageId = await uploadPassKitImage(imageUrl, imageName);
 
     // Update merchant.passkitStampImages[stampIndex] in Firestore
     const merchantRef = adminDb.doc(`merchants/${merchantUid}`);
