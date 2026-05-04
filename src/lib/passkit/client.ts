@@ -24,7 +24,7 @@ function headers() {
   };
 }
 
-function stampImageId(stamps: number, images?: string[]): string | null {
+function stampImageIds(stamps: number, images?: Array<{ strip: string; hero: string } | null>): { strip: string; hero: string } | null {
   return images?.[stamps] ?? null;
 }
 
@@ -61,9 +61,9 @@ export async function createLoyaltyPass(
     },
   };
 
-  const imgId = stampImageId(0, merchant.passkitStampImages);
-  if (imgId) {
-    body.passOverrides = { imageIds: { strip: imgId, hero: imgId } };
+  const imgIds = stampImageIds(0, merchant.passkitStampImages);
+  if (imgIds) {
+    body.passOverrides = { imageIds: { strip: imgIds.strip, hero: imgIds.hero } };
   }
 
   // PassKit enrol endpoint (correct per docs)
@@ -91,7 +91,7 @@ export async function updateLoyaltyPass(
   rewardName: string,
   customerName?: string,
   passkitProgramId?: string,
-  stampImages?: string[]
+  stampImages?: Array<{ strip: string; hero: string } | null>
 ): Promise<void> {
   const remaining = stampTarget - stamps;
   const rewardUnlocked = stamps === 0 && remaining === stampTarget;
@@ -120,9 +120,9 @@ export async function updateLoyaltyPass(
     },
   };
 
-  const imgId = stampImageId(stamps, stampImages);
-  if (imgId) {
-    body.passOverrides = { imageIds: { strip: imgId, hero: imgId } };
+  const imgIds = stampImageIds(stamps, stampImages);
+  if (imgIds) {
+    body.passOverrides = { imageIds: { strip: imgIds.strip, hero: imgIds.hero } };
   }
 
   const res = await fetch(`${API_BASE}/members/member`, {
@@ -138,7 +138,7 @@ export async function updateLoyaltyPass(
   }
 }
 
-export async function uploadPassKitImage(base64: string, name: string): Promise<string> {
+export async function uploadPassKitImage(base64: string, name: string): Promise<{ strip: string; hero: string }> {
   const res = await fetch(`${API_BASE}/images`, {
     method: 'POST',
     headers: headers(),
@@ -153,8 +153,8 @@ export async function uploadPassKitImage(base64: string, name: string): Promise<
   });
   if (!res.ok) throw new Error(`PassKit image upload failed ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  console.log('[PassKit /images response]', JSON.stringify(data));
-  const id = data.id ?? data.imageId ?? data.imageIds?.strip ?? data.imageIds?.hero;
-  if (!id) throw new Error(`PassKit image upload returned no image ID: ${JSON.stringify(data)}`);
-  return id as string;
+  const stripId: string = data.strip;
+  const heroId: string = data.hero;
+  if (!stripId || !heroId) throw new Error(`PassKit image upload missing IDs: ${JSON.stringify(data)}`);
+  return { strip: stripId, hero: heroId };
 }

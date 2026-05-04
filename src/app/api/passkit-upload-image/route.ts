@@ -49,17 +49,18 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64 = buffer.toString('base64');
 
-    const imageId = await uploadPassKitImage(base64, imageName);
+    const imageIds = await uploadPassKitImage(base64, imageName);
 
-    // Save imageId to merchant.passkitStampImages[stampIndex]
+    // Save { strip, hero } pair to merchant.passkitStampImages[stampIndex]
     const merchantRef = adminDb.doc(`merchants/${merchantUid}`);
     const snap = await merchantRef.get();
-    const existing: (string | null)[] = (snap.data()?.passkitStampImages as (string | null)[] | undefined) ?? [];
+    const existing: ({ strip: string; hero: string } | null)[] =
+      (snap.data()?.passkitStampImages as ({ strip: string; hero: string } | null)[] | undefined) ?? [];
     const length = Math.max(existing.length, stampIndex + 1);
-    const updated = Array.from({ length }, (_, i) => (i === stampIndex ? imageId : (existing[i] ?? null)));
+    const updated = Array.from({ length }, (_, i) => (i === stampIndex ? imageIds : (existing[i] ?? null)));
     await merchantRef.update({ passkitStampImages: updated });
 
-    return NextResponse.json({ imageId, stampIndex });
+    return NextResponse.json({ imageId: imageIds.strip, stampIndex });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[passkit-upload-image]', message);

@@ -28,9 +28,9 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
-  // Track uploaded image IDs per stamp index (initialised from merchant doc)
+  // Track uploaded strip image IDs per stamp index (for display only; full pair saved in Firestore)
   const [stampImages, setStampImages] = useState<(string | undefined)[]>(
-    () => Array.from({ length: merchant.stampTarget + 1 }, (_, i) => merchant.passkitStampImages?.[i])
+    () => Array.from({ length: merchant.stampTarget + 1 }, (_, i) => merchant.passkitStampImages?.[i]?.strip)
   );
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState('');

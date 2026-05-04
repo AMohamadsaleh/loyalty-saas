@@ -14,7 +14,7 @@ const schema = z.object({
   name: z.string().min(1).max(100).optional(),
   passkitProgramId: z.string().max(100).optional(),
   passkitTierId: z.string().max(100).optional(),
-  passkitStampImages: z.array(z.string()).optional(),
+  passkitStampImages: z.array(z.union([z.object({ strip: z.string(), hero: z.string() }), z.null()])).optional(),
 });
 
 export async function POST(req: NextRequest) {
