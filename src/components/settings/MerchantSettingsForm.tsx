@@ -34,6 +34,7 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
   );
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState('');
+  const [justUploaded, setJustUploaded] = useState<Set<number>>(new Set());
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -109,6 +110,18 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
         next[stampIndex] = imageId;
         return next;
       });
+      setJustUploaded((prev) => {
+        const next = new Set(prev);
+        next.add(stampIndex);
+        return next;
+      });
+      setTimeout(() => {
+        setJustUploaded((prev) => {
+          const next = new Set(prev);
+          next.delete(stampIndex);
+          return next;
+        });
+      }, 3000);
     } catch (err: unknown) {
       setUploadError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
@@ -250,28 +263,53 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
           {Array.from({ length: slotCount }, (_, i) => {
             const hasImage = !!stampImages[i];
             const isUploading = uploadingIndex === i;
+            const isJustUploaded = justUploaded.has(i);
+            const anyUploading = uploadingIndex !== null;
             const label = i === 0 ? '0 stamps (empty card)' : i === form.stampTarget ? `${i} stamps (full — reward!)` : `${i} stamp${i === 1 ? '' : 's'}`;
             return (
               <div key={i} className="flex items-center gap-3">
                 <span className="w-40 text-xs text-slate-600 shrink-0">{label}</span>
-                <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 cursor-pointer text-xs font-medium transition-colors ${hasImage ? 'border-green-300 bg-green-50 text-green-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-400 hover:bg-blue-50'} ${isUploading ? 'opacity-60 pointer-events-none' : ''}`}>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    className="hidden"
-                    disabled={isUploading}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleImageUpload(i, file);
-                      e.target.value = '';
-                    }}
-                  />
-                  {isUploading ? 'Uploading…' : hasImage ? 'Uploaded ✓' : 'Choose image'}
-                </label>
-                {hasImage && !isUploading && (
-                  <span className="text-xs text-slate-400 font-mono truncate max-w-[120px]" title={stampImages[i]}>
-                    {stampImages[i]?.slice(0, 10)}…
-                  </span>
+
+                {isUploading ? (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-blue-200 bg-blue-50 text-blue-600 text-xs font-medium">
+                    <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Uploading…
+                  </div>
+                ) : isJustUploaded ? (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-green-400 bg-green-100 text-green-800 text-xs font-semibold animate-pulse">
+                    ✓ Upload successful!
+                  </div>
+                ) : hasImage ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-green-300 bg-green-50 text-green-700 text-xs font-medium">
+                      <span>✓ Uploaded</span>
+                      <span className="text-green-500 font-mono" title={stampImages[i]}>{stampImages[i]?.slice(0, 8)}…</span>
+                    </div>
+                    <label className={`px-3 py-2 rounded-lg border-2 border-slate-200 bg-white text-slate-500 text-xs font-medium cursor-pointer hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors ${anyUploading ? 'pointer-events-none opacity-40' : ''}`}>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        disabled={anyUploading}
+                        onChange={(e) => { const file = e.target.files?.[0]; if (file) handleImageUpload(i, file); e.target.value = ''; }}
+                      />
+                      Replace
+                    </label>
+                  </div>
+                ) : (
+                  <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 text-xs font-medium cursor-pointer hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 transition-colors ${anyUploading ? 'pointer-events-none opacity-40' : ''}`}>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      disabled={anyUploading}
+                      onChange={(e) => { const file = e.target.files?.[0]; if (file) handleImageUpload(i, file); e.target.value = ''; }}
+                    />
+                    Choose image
+                  </label>
                 )}
               </div>
             );
