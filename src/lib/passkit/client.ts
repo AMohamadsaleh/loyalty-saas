@@ -24,19 +24,8 @@ function headers() {
   };
 }
 
-// Returns the PassKit image ID for a given stamp count.
-// Set PASSKIT_STAMP_IMAGES env var as a JSON array:
-//   ["imageId_0", "imageId_1", "imageId_2", ... "imageId_N"]
-// index 0 = 0 stamps, index 1 = 1 stamp, etc.
-function getStampImageId(stamps: number): string | null {
-  const raw = process.env.PASSKIT_STAMP_IMAGES;
-  if (!raw) return null;
-  try {
-    const ids: string[] = JSON.parse(raw);
-    return ids[stamps] ?? null;
-  } catch {
-    return null;
-  }
+function stampImageId(stamps: number, images?: string[]): string | null {
+  return images?.[stamps] ?? null;
 }
 
 export async function createLoyaltyPass(
@@ -45,27 +34,25 @@ export async function createLoyaltyPass(
   customerName?: string,
   customerPhone?: string
 ): Promise<{ passId: string; passUrl: string }> {
-  const remaining = merchant.stampTarget; // starts at 0 stamps → all remaining
+  const programId = merchant.passkitProgramId ?? process.env.PASSKIT_PROGRAM_ID;
+  const tierId    = merchant.passkitTierId    ?? process.env.PASSKIT_TIER_ID ?? '222';
+
+  if (!programId) throw new Error('No PassKit program ID configured for this merchant');
+
+  const nameParts = (customerName ?? '').trim().split(' ');
 
   const body: Record<string, unknown> = {
-    programId: process.env.PASSKIT_PROGRAM_ID,
-    tierId: process.env.PASSKIT_TIER_ID ?? '222',
+    programId,
+    tierId,
     externalId: membershipId,
-    // points = current stamp count
     points: 0,
-    // person.displayName = remaining stamps to reward (as int string)
     person: {
-      displayName: String(remaining),
-      ...(customerName ? (() => {
-        const parts = customerName.trim().split(' ');
-        return {
-          forename: parts[0] || undefined,
-          surname: parts.slice(1).join(' ') || undefined,
-        };
-      })() : {}),
-      ...(customerPhone ? { mobileNumber: customerPhone } : {}),
+      // displayName = remaining stamps to reward (as user specified)
+      displayName: String(merchant.stampTarget),
+      forename: nameParts[0] || undefined,
+      surname: nameParts.slice(1).join(' ') || undefined,
+      mobileNumber: customerPhone || undefined,
     },
-    // metaData: customer name + stamp progress text
     metaData: {
       customerName: customerName || 'Member',
       stampProgress: `0 / ${merchant.stampTarget}`,
@@ -74,15 +61,13 @@ export async function createLoyaltyPass(
     },
   };
 
-  // Attach stamp progress image if configured
-  const imageId = getStampImageId(0);
-  if (imageId) {
-    body.passOverrides = {
-      imageIds: { strip: imageId, hero: imageId },
-    };
+  const imgId = stampImageId(0, merchant.passkitStampImages);
+  if (imgId) {
+    body.passOverrides = { imageIds: { strip: imgId, hero: imgId } };
   }
 
-  const res = await fetch(`${API_BASE}/members/member`, {
+  // PassKit enrol endpoint (correct per docs)
+  const res = await fetch(`${API_BASE}/members/enrolMember`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify(body),
@@ -91,7 +76,7 @@ export async function createLoyaltyPass(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`PassKit createPass ${res.status}: ${err}`);
+    throw new Error(`PassKit enrolMember ${res.status}: ${err}`);
   }
 
   const data = await res.json();
@@ -104,29 +89,29 @@ export async function updateLoyaltyPass(
   stamps: number,
   stampTarget: number,
   rewardName: string,
-  customerName?: string
+  customerName?: string,
+  passkitProgramId?: string,
+  stampImages?: string[]
 ): Promise<void> {
   const remaining = stampTarget - stamps;
   const rewardUnlocked = stamps === 0 && remaining === stampTarget;
+  const programId = passkitProgramId ?? process.env.PASSKIT_PROGRAM_ID;
+
+  const nameParts = (customerName ?? '').trim().split(' ');
 
   const body: Record<string, unknown> = {
-    programId: process.env.PASSKIT_PROGRAM_ID,
+    programId,
     externalId,
     // members.member.points = current stamp count
     points: stamps,
-    // person.displayName = remaining stamps to reward (int), or 0 when reward unlocked
     person: {
+      // displayName = remaining stamps to reward (int string) as user specified
       displayName: rewardUnlocked ? '0' : String(remaining),
-      ...(customerName ? (() => {
-        const parts = customerName.trim().split(' ');
-        return {
-          forename: parts[0] || undefined,
-          surname: parts.slice(1).join(' ') || undefined,
-        };
-      })() : {}),
+      forename: nameParts[0] || undefined,
+      surname: nameParts.slice(1).join(' ') || undefined,
     },
     metaData: {
-      ...(customerName ? { customerName } : {}),
+      customerName: customerName || undefined,
       stampProgress: `${stamps} / ${stampTarget}`,
       reward: rewardName,
       status: rewardUnlocked
@@ -135,12 +120,9 @@ export async function updateLoyaltyPass(
     },
   };
 
-  // Update stamp progress image
-  const imageId = getStampImageId(stamps);
-  if (imageId) {
-    body.passOverrides = {
-      imageIds: { strip: imageId, hero: imageId },
-    };
+  const imgId = stampImageId(stamps, stampImages);
+  if (imgId) {
+    body.passOverrides = { imageIds: { strip: imgId, hero: imgId } };
   }
 
   const res = await fetch(`${API_BASE}/members/member`, {
@@ -156,16 +138,14 @@ export async function updateLoyaltyPass(
   }
 }
 
-// Upload a single image (base64 PNG/JPG) to PassKit and return its image ID.
-// Use this to populate PASSKIT_STAMP_IMAGES env var.
 export async function uploadPassKitImage(base64Data: string, name: string): Promise<string> {
   const res = await fetch(`${API_BASE}/images`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({ imageData: base64Data, name }),
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(20000),
   });
-  if (!res.ok) throw new Error(`PassKit image upload failed: ${await res.text()}`);
+  if (!res.ok) throw new Error(`PassKit image upload failed ${res.status}: ${await res.text()}`);
   const data = await res.json();
   return data.id ?? data.imageId;
 }

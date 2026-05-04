@@ -21,10 +21,19 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
     templateType: merchant.templateType,
     brandColor: merchant.brandColor,
     displayMode: merchant.displayMode,
+    passkitProgramId: merchant.passkitProgramId ?? '',
+    passkitTierId: merchant.passkitTierId ?? '',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+
+  // Track uploaded image IDs per stamp index (initialised from merchant doc)
+  const [stampImages, setStampImages] = useState<(string | undefined)[]>(
+    () => Array.from({ length: merchant.stampTarget + 1 }, (_, i) => merchant.passkitStampImages?.[i])
+  );
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState('');
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -54,6 +63,52 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
       setSaving(false);
     }
   }
+
+  async function handleImageUpload(stampIndex: number, file: File) {
+    if (!user) return;
+    setUploadingIndex(stampIndex);
+    setUploadError('');
+
+    try {
+      const base64 = await fileToBase64(file);
+      const token = await user.getIdToken();
+      const res = await fetch('/api/passkit-upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          imageBase64: base64,
+          stampIndex,
+          name: `${merchant.id}_stamp_${stampIndex}`,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Upload failed');
+      }
+      const { imageId } = await res.json();
+      setStampImages((prev) => {
+        const next = [...prev];
+        next[stampIndex] = imageId;
+        return next;
+      });
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingIndex(null);
+    }
+  }
+
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // When stampTarget changes in the form, resize the slots preview
+  const slotCount = form.stampTarget + 1; // 0 through stampTarget
 
   return (
     <form onSubmit={handleSave} className="space-y-5 max-w-lg">
@@ -138,6 +193,80 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
             <option value="image">Image (stamp card visual)</option>
             <option value="text">Text only</option>
           </select>
+        </div>
+      </div>
+
+      <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-5">
+        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">PassKit Wallet Pass</h2>
+        <p className="text-xs text-slate-400">
+          Create a program in PassKit dashboard, then paste the IDs here.
+          Each merchant needs their own program for their branded pass.
+        </p>
+        <div>
+          <label className={labelClass}>PassKit Program ID</label>
+          <input
+            type="text"
+            value={form.passkitProgramId}
+            onChange={(e) => set('passkitProgramId', e.target.value)}
+            placeholder="e.g. 3Lmwu9YlZ9hlbBOuyjp85d"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className={labelClass}>PassKit Tier ID</label>
+          <input
+            type="text"
+            value={form.passkitTierId}
+            onChange={(e) => set('passkitTierId', e.target.value)}
+            placeholder="e.g. 222"
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-5">
+        <div>
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Stamp Progress Images</h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Upload one image per stamp count (0 through {form.stampTarget}). These are sent to PassKit
+            and displayed on the wallet pass strip. Recommended: 1125&times;432 px PNG.
+          </p>
+        </div>
+
+        {uploadError && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{uploadError}</p>
+        )}
+
+        <div className="space-y-2">
+          {Array.from({ length: slotCount }, (_, i) => {
+            const hasImage = !!stampImages[i];
+            const isUploading = uploadingIndex === i;
+            const label = i === 0 ? '0 stamps (empty card)' : i === form.stampTarget ? `${i} stamps (full — reward!)` : `${i} stamp${i === 1 ? '' : 's'}`;
+            return (
+              <div key={i} className="flex items-center gap-3">
+                <span className="w-40 text-xs text-slate-600 shrink-0">{label}</span>
+                <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 cursor-pointer text-xs font-medium transition-colors ${hasImage ? 'border-green-300 bg-green-50 text-green-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-400 hover:bg-blue-50'} ${isUploading ? 'opacity-60 pointer-events-none' : ''}`}>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    disabled={isUploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(i, file);
+                      e.target.value = '';
+                    }}
+                  />
+                  {isUploading ? 'Uploading…' : hasImage ? 'Uploaded ✓' : 'Choose image'}
+                </label>
+                {hasImage && !isUploading && (
+                  <span className="text-xs text-slate-400 font-mono truncate max-w-[120px]" title={stampImages[i]}>
+                    {stampImages[i]?.slice(0, 10)}…
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

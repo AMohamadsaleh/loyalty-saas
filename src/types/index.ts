@@ -10,6 +10,11 @@ export interface Merchant {
   displayMode: 'text' | 'image';
   isActive: boolean;
   createdAt: number;
+  // PassKit — set manually after creating program+tier in PassKit dashboard
+  passkitProgramId?: string;
+  passkitTierId?: string;
+  // PassKit image IDs for each stamp count: index 0 = 0 stamps, index N = N stamps
+  passkitStampImages?: string[];
 }
 
 export interface Customer {

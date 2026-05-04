@@ -12,6 +12,9 @@ const schema = z.object({
   brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   displayMode: z.enum(['text', 'image']).optional(),
   name: z.string().min(1).max(100).optional(),
+  passkitProgramId: z.string().max(100).optional(),
+  passkitTierId: z.string().max(100).optional(),
+  passkitStampImages: z.array(z.string()).optional(),
 });
 
 export async function POST(req: NextRequest) {

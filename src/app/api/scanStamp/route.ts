@@ -132,7 +132,9 @@ export async function POST(req: NextRequest) {
       result.newStamps,
       result.merchant.stampTarget,
       result.merchant.rewardName,
-      result.customerName
+      result.customerName,
+      result.merchant.passkitProgramId,
+      result.merchant.passkitStampImages
     );
   } catch {
     // Pass update failure is non-critical — stamp is already recorded
