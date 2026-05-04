@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb, getAdminStorage } from '@/lib/firebase/admin';
+import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { uploadPassKitImage } from '@/lib/passkit/client';
 
 export async function POST(req: NextRequest) {
@@ -36,31 +36,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid stampIndex' }, { status: 400 });
   }
 
-  const MAX_BYTES = 4 * 1024 * 1024; // 4 MB
+  // Vercel body limit is 4.5 MB; keep file under 3.3 MB so base64 stays under that
+  const MAX_BYTES = 3.3 * 1024 * 1024;
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: 'Image too large — keep under 4 MB' }, { status: 413 });
+    return NextResponse.json({ error: 'Image too large — keep under 3.3 MB' }, { status: 413 });
   }
 
   const imageName = typeof nameRaw === 'string' ? nameRaw : `merchant_${merchantUid}_stamp_${stampIndex}`;
 
   try {
-    // Upload file to Firebase Storage server-side (no CORS)
-    const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-    console.log('[passkit-upload-image] bucket:', bucketName);
-    if (!bucketName) throw new Error('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET env var is not set');
-
+    // Convert to base64 and send directly to PassKit — no storage needed
     const buffer = Buffer.from(await file.arrayBuffer());
-    const storagePath = `passkit-images/${merchantUid}/stamp_${stampIndex}_${Date.now()}`;
-    const bucket = getAdminStorage().bucket(bucketName);
-    const storageFile = bucket.file(storagePath);
-    await storageFile.save(buffer, { metadata: { contentType: file.type } });
-    await storageFile.makePublic();
-    const imageUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+    const base64 = buffer.toString('base64');
 
-    // Register image with PassKit and get an image ID
-    const imageId = await uploadPassKitImage(imageUrl, imageName);
+    const imageId = await uploadPassKitImage(base64, imageName);
 
-    // Update merchant.passkitStampImages[stampIndex] in Firestore
+    // Save imageId to merchant.passkitStampImages[stampIndex]
     const merchantRef = adminDb.doc(`merchants/${merchantUid}`);
     const snap = await merchantRef.get();
     const existing: (string | null)[] = (snap.data()?.passkitStampImages as (string | null)[] | undefined) ?? [];

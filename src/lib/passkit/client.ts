@@ -138,15 +138,15 @@ export async function updateLoyaltyPass(
   }
 }
 
-export async function uploadPassKitImage(imageUrl: string, name: string): Promise<string> {
+export async function uploadPassKitImage(base64: string, name: string): Promise<string> {
   const res = await fetch(`${API_BASE}/images`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({
       name,
       imageData: {
-        strip: imageUrl,
-        hero: imageUrl,
+        strip: base64,
+        hero: base64,
       },
     }),
     signal: AbortSignal.timeout(20000),
