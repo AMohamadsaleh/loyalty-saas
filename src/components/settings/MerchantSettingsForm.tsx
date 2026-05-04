@@ -64,12 +64,30 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
     }
   }
 
+  function checkImageDimensions(file: File): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        if (img.width < 1125 || img.height < 336) {
+          reject(new Error(`Image too small: ${img.width}×${img.height}px. Minimum required: 1125×336px (recommended: 1125×432px).`));
+        } else {
+          resolve();
+        }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image dimensions')); };
+      img.src = url;
+    });
+  }
+
   async function handleImageUpload(stampIndex: number, file: File) {
     if (!user) return;
     setUploadingIndex(stampIndex);
     setUploadError('');
 
     try {
+      await checkImageDimensions(file);
       const base64 = await fileToBase64(file);
       const token = await user.getIdToken();
       const res = await fetch('/api/passkit-upload-image', {
@@ -229,7 +247,7 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
           <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Stamp Progress Images</h2>
           <p className="text-xs text-slate-400 mt-1">
             Upload one image per stamp count (0 through {form.stampTarget}). These are sent to PassKit
-            and displayed on the wallet pass strip. Recommended: 1125&times;432 px PNG.
+            and displayed on the wallet pass. Minimum: 1125&times;336 px — recommended: 1125&times;432 px PNG.
           </p>
         </div>
 

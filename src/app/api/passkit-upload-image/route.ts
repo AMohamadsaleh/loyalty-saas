@@ -46,9 +46,9 @@ export async function POST(req: NextRequest) {
     // Update merchant.passkitStampImages[stampIndex] in Firestore
     const merchantRef = adminDb.doc(`merchants/${merchantUid}`);
     const snap = await merchantRef.get();
-    const existing: string[] = (snap.data()?.passkitStampImages as string[] | undefined) ?? [];
-    const updated = [...existing];
-    updated[stampIndex] = imageId;
+    const existing: (string | null)[] = (snap.data()?.passkitStampImages as (string | null)[] | undefined) ?? [];
+    const length = Math.max(existing.length, stampIndex + 1);
+    const updated = Array.from({ length }, (_, i) => (i === stampIndex ? imageId : (existing[i] ?? null)));
     await merchantRef.update({ passkitStampImages: updated });
 
     return NextResponse.json({ imageId, stampIndex });
