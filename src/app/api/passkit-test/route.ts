@@ -16,24 +16,31 @@ export async function GET(req: Request) {
 
   const results: Record<string, unknown> = { tierId, programId };
 
-  const paths = [
-    `/members/tier/${tierId}`,
-    `/members/program/${programId}`,
-    `/design/${designId}`,
-    `/members/design/${designId}`,
-    `/template/${designId}`,
-  ];
+  // List all tiers for the program
+  try {
+    const r = await fetch(`${BASE}/members/tier/list`, {
+      method: 'POST',
+      headers: h(),
+      body: JSON.stringify({ programId }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const text = await r.text();
+    results['tier_list'] = { status: r.status, body: r.ok ? JSON.parse(text) : text };
+  } catch (err) {
+    results['tier_list'] = { error: String(err) };
+  }
 
-  for (const path of paths) {
+  // Try fetching tier "222" directly
+  for (const id of ['222', tierId, designId]) {
     try {
-      const r = await fetch(`${BASE}${path}`, {
+      const r = await fetch(`${BASE}/members/tier/${id}`, {
         headers: h(),
         signal: AbortSignal.timeout(8000),
       });
       const text = await r.text();
-      results[path] = { status: r.status, body: r.ok ? JSON.parse(text) : text.slice(0, 200) };
+      results[`tier_${id}`] = { status: r.status, body: r.ok ? JSON.parse(text) : text.slice(0, 200) };
     } catch (err) {
-      results[path] = { error: String(err) };
+      results[`tier_${id}`] = { error: String(err) };
     }
   }
 
