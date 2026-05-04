@@ -9,6 +9,33 @@ import { isCooldownActive, isDailyLimitReached, todayString } from '@/lib/utils/
 import { updateLoyaltyPass } from '@/lib/passkit/client';
 import type { Membership, Transaction } from '@/types';
 
+function scanCandidates(value: unknown): string[] {
+  if (typeof value !== 'string') return [];
+
+  const raw = value.trim();
+  if (!raw) return [];
+
+  const candidates = new Set<string>([raw]);
+
+  try {
+    const url = new URL(raw);
+    const lastPathPart = url.pathname.split('/').filter(Boolean).pop();
+    if (lastPathPart) candidates.add(lastPathPart);
+
+    for (const key of ['membershipId', 'memberId', 'passId', 'pid', 'eid', 'externalId', 'id']) {
+      const param = url.searchParams.get(key);
+      if (param) candidates.add(param.trim());
+    }
+  } catch {
+    // Not a URL. Continue with plain text parsing.
+  }
+
+  const keyValueMatch = raw.match(/(?:membershipId|memberId|passId|pid|eid|externalId|id)[:=]\s*([A-Za-z0-9_-]+)/i);
+  if (keyValueMatch) candidates.add(keyValueMatch[1]);
+
+  return Array.from(candidates).filter(Boolean);
+}
+
 export async function POST(req: NextRequest) {
   // 1. Auth
   const bearer = req.headers.get('authorization')?.replace('Bearer ', '');
@@ -23,17 +50,30 @@ export async function POST(req: NextRequest) {
   }
 
   const { membershipId: scannedId } = await req.json();
-  if (!scannedId) return NextResponse.json({ error: 'Missing membershipId' }, { status: 400 });
+  const candidates = scanCandidates(scannedId);
+  if (candidates.length === 0) return NextResponse.json({ error: 'Missing membershipId' }, { status: 400 });
 
   // Resolve the real Firestore membership ID.
   // If the pass barcode uses PassKit's ${pid} instead of ${eid}, the scanned value
   // is the PassKit internal ID — fall back to a passId lookup.
-  let membershipId = scannedId;
-  const direct = await getMembership(scannedId);
-  if (!direct) {
-    const byPassId = await getMembershipByPassId(scannedId);
-    if (!byPassId) return NextResponse.json({ error: 'Membership not found' }, { status: 404 });
-    membershipId = byPassId.id;
+  let membershipId: string | null = null;
+  for (const candidate of candidates) {
+    const direct = await getMembership(candidate);
+    if (direct) {
+      membershipId = direct.id;
+      break;
+    }
+
+    const byPassId = await getMembershipByPassId(candidate);
+    if (byPassId) {
+      membershipId = byPassId.id;
+      break;
+    }
+  }
+
+  if (!membershipId) {
+    console.warn('[scanStamp] membership not found for scanned candidates:', candidates);
+    return NextResponse.json({ error: 'Membership not found' }, { status: 404 });
   }
 
   // Use Firestore transaction to prevent race conditions
