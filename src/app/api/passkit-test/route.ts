@@ -8,33 +8,36 @@ function h() {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.PASSKIT_API_KEY}` };
 }
 
-// GET — list all members so we can see who is consuming the quota
-export async function GET() {
-  const programId = process.env.PASSKIT_PROGRAM_ID ?? '';
-  const results: Record<string, unknown> = { programId };
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const designId = searchParams.get('design') ?? '42ZDgw2RGeDV0x1Ww9bk7s';
+  const results: Record<string, unknown> = {};
 
-  try {
-    const r = await fetch(`${BASE}/members/member/list/${programId}`, {
-      method: 'POST',
-      headers: h(),
-      body: JSON.stringify({ programId, pageSize: 50 }),
-      signal: AbortSignal.timeout(10000),
-    });
-    const text = await r.text();
-    results['members'] = { status: r.status, body: text };
-  } catch (err) {
-    results['members'] = { error: String(err) };
+  // Fetch the tier/template by design ID
+  for (const path of [
+    `/members/tier/${designId}`,
+    `/members/program/${designId}`,
+  ]) {
+    try {
+      const r = await fetch(`${BASE}${path}`, {
+        headers: h(),
+        signal: AbortSignal.timeout(10000),
+      });
+      const text = await r.text();
+      results[path] = { status: r.status, body: r.ok ? JSON.parse(text) : text };
+      if (r.ok) break;
+    } catch (err) {
+      results[path] = { error: String(err) };
+    }
   }
 
-  return NextResponse.json(results, { status: 200 });
+  return NextResponse.json(results);
 }
 
-// DELETE — wipe ALL members for this program (clears quota)
 export async function DELETE() {
   const programId = process.env.PASSKIT_PROGRAM_ID ?? '';
   const results: Record<string, unknown> = {};
 
-  // List first
   const listRes = await fetch(`${BASE}/members/member/list/${programId}`, {
     method: 'POST',
     headers: h(),
@@ -64,5 +67,5 @@ export async function DELETE() {
     }
   }
 
-  return NextResponse.json(results, { status: 200 });
+  return NextResponse.json(results);
 }
