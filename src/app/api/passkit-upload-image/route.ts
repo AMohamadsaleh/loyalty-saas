@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     // Upload file to Firebase Storage server-side (no CORS)
     const buffer = Buffer.from(await file.arrayBuffer());
     const storagePath = `passkit-images/${merchantUid}/stamp_${stampIndex}_${Date.now()}`;
-    const bucket = getAdminStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET);
+    const bucket = getAdminStorage().bucket();
     const storageFile = bucket.file(storagePath);
     await storageFile.save(buffer, { metadata: { contentType: file.type } });
     await storageFile.makePublic();
