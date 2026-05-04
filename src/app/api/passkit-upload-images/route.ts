@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
   const stampTarget = parseInt(match[1], 10);
 
-  const imageIds: string[] = [];
+  const imageIds: Array<{ strip: string; hero: string } | null> = [];
   const errors: string[] = [];
 
   for (let i = 0; i <= stampTarget; i++) {
@@ -35,11 +35,11 @@ export async function POST(req: NextRequest) {
     try {
       const imageBuffer = readFileSync(imagePath);
       const base64 = imageBuffer.toString('base64');
-      const id = await uploadPassKitImage(base64, `stamp_${template}_${i}`);
-      imageIds.push(id);
+      const ids = await uploadPassKitImage(base64, `stamp_${template}_${i}`);
+      imageIds.push(ids);
     } catch (err) {
       errors.push(`Image ${i}: ${err}`);
-      imageIds.push(''); // placeholder so indexes stay aligned
+      imageIds.push(null); // placeholder so indexes stay aligned
     }
   }
 
