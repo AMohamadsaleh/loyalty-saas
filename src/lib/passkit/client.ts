@@ -153,5 +153,7 @@ export async function uploadPassKitImage(base64Data: string, name: string): Prom
   });
   if (!res.ok) throw new Error(`PassKit image upload failed ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  return data.id ?? data.imageId ?? data.imageIds?.strip ?? data.imageIds?.hero;
+  const id = data.id ?? data.imageId ?? data.imageIds?.strip ?? data.imageIds?.hero;
+  if (!id) throw new Error(`PassKit image upload returned no image ID: ${JSON.stringify(data)}`);
+  return id as string;
 }
