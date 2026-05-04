@@ -142,10 +142,16 @@ export async function uploadPassKitImage(base64Data: string, name: string): Prom
   const res = await fetch(`${API_BASE}/images`, {
     method: 'POST',
     headers: headers(),
-    body: JSON.stringify({ imageData: base64Data, name }),
+    body: JSON.stringify({
+      name,
+      imageData: {
+        strip: base64Data,  // Apple Wallet banner image
+        hero: base64Data,   // Google Wallet hero image
+      },
+    }),
     signal: AbortSignal.timeout(20000),
   });
   if (!res.ok) throw new Error(`PassKit image upload failed ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  return data.id ?? data.imageId;
+  return data.id ?? data.imageId ?? data.imageIds?.strip ?? data.imageIds?.hero;
 }
