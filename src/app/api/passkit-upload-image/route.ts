@@ -45,9 +45,13 @@ export async function POST(req: NextRequest) {
 
   try {
     // Upload file to Firebase Storage server-side (no CORS)
+    const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+    console.log('[passkit-upload-image] bucket:', bucketName);
+    if (!bucketName) throw new Error('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET env var is not set');
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const storagePath = `passkit-images/${merchantUid}/stamp_${stampIndex}_${Date.now()}`;
-    const bucket = getAdminStorage().bucket();
+    const bucket = getAdminStorage().bucket(bucketName);
     const storageFile = bucket.file(storagePath);
     await storageFile.save(buffer, { metadata: { contentType: file.type } });
     await storageFile.makePublic();
