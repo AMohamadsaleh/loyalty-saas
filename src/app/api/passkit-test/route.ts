@@ -10,22 +10,28 @@ function h() {
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const designId = searchParams.get('design') ?? '42ZDgw2RGeDV0x1Ww9bk7s';
-  const results: Record<string, unknown> = {};
+  const tierId   = searchParams.get('tier')    ?? (process.env.PASSKIT_TIER_ID ?? 'base');
+  const programId = searchParams.get('program') ?? (process.env.PASSKIT_PROGRAM_ID ?? '');
+  const designId  = searchParams.get('design')  ?? '42ZDgw2RGeDV0x1Ww9bk7s';
 
-  // Fetch the tier/template by design ID
-  for (const path of [
-    `/members/tier/${designId}`,
-    `/members/program/${designId}`,
-  ]) {
+  const results: Record<string, unknown> = { tierId, programId };
+
+  const paths = [
+    `/members/tier/${tierId}`,
+    `/members/program/${programId}`,
+    `/design/${designId}`,
+    `/members/design/${designId}`,
+    `/template/${designId}`,
+  ];
+
+  for (const path of paths) {
     try {
       const r = await fetch(`${BASE}${path}`, {
         headers: h(),
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(8000),
       });
       const text = await r.text();
-      results[path] = { status: r.status, body: r.ok ? JSON.parse(text) : text };
-      if (r.ok) break;
+      results[path] = { status: r.status, body: r.ok ? JSON.parse(text) : text.slice(0, 200) };
     } catch (err) {
       results[path] = { error: String(err) };
     }
