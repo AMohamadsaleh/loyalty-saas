@@ -5,13 +5,20 @@ import { z } from 'zod';
 import { getMerchant } from '@/lib/firestore/merchants';
 import { getOrCreateCustomer } from '@/lib/firestore/customers';
 import { findMembership, createMembership } from '@/lib/firestore/memberships';
-import { createLoyaltyPass } from '@/lib/passkit/client';
+import { createLoyaltyPass, getPassKitPassUrl } from '@/lib/passkit/client';
+import type { Membership } from '@/types';
 
 const schema = z.object({
   merchantId: z.string().min(1),
   name: z.string().max(100).optional().default(''),
   phone: z.string().max(20).optional().default(''),
 });
+
+function getExistingPassUrl(membership: Membership): string | null {
+  if (membership.passUrl) return membership.passUrl;
+  if (!membership.passId || membership.passId === membership.id) return null;
+  return getPassKitPassUrl(membership.passId);
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
@@ -33,7 +40,7 @@ export async function POST(req: NextRequest) {
   if (existing) {
     return NextResponse.json({
       membershipId: existing.id,
-      passUrl: null,
+      passUrl: getExistingPassUrl(existing),
       existing: true,
     });
   }
@@ -60,6 +67,7 @@ export async function POST(req: NextRequest) {
     stamps: 0,
     completedRewards: 0,
     passId,
+    passUrl,
     lastScanAt: 0,
     dailyScanCount: 0,
     lastScanDate: '',

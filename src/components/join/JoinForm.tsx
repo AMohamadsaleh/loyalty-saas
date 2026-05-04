@@ -11,6 +11,7 @@ interface Props {
 interface Result {
   membershipId: string;
   passUrl: string | null;
+  passError?: string | null;
 }
 
 function MembershipQR({ membershipId, merchant }: { membershipId: string; merchant: Merchant }) {
@@ -66,7 +67,11 @@ export function JoinForm({ merchant }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong');
-      setResult({ membershipId: data.membershipId, passUrl: data.passUrl ?? null });
+      setResult({
+        membershipId: data.membershipId,
+        passUrl: data.passUrl ?? null,
+        passError: data.passError ?? null,
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create pass');
     } finally {
@@ -86,7 +91,18 @@ export function JoinForm({ merchant }: Props) {
 
   // Show QR code only (PassKit not configured or failed)
   if (result?.membershipId) {
-    return <MembershipQR membershipId={result.membershipId} merchant={merchant} />;
+    return (
+      <div className="space-y-4">
+        {result.passError && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <p className="text-sm text-amber-800">
+              Wallet pass is not available right now. Use this QR code at the counter.
+            </p>
+          </div>
+        )}
+        <MembershipQR membershipId={result.membershipId} merchant={merchant} />
+      </div>
+    );
   }
 
   return (

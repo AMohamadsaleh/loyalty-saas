@@ -31,6 +31,7 @@ export interface Membership {
   stamps: number;
   completedRewards: number;
   passId: string;
+  passUrl?: string | null;
   lastScanAt: number;
   dailyScanCount: number;
   lastScanDate: string; // "YYYY-MM-DD"

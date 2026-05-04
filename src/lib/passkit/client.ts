@@ -4,6 +4,10 @@ import type { Merchant } from '@/types';
 const API_BASE = 'https://api.pub1.passkit.io';
 const PASS_BASE = 'https://pub1.pskt.io';
 
+export function getPassKitPassUrl(passId: string): string {
+  return `${PASS_BASE}/${passId}`;
+}
+
 function makeJWT(): string {
   const key = process.env.PASSKIT_KEY ?? process.env.PASSKIT_API_KEY ?? '';
   const secret = process.env.PASSKIT_SECRET ?? '';
@@ -66,8 +70,7 @@ export async function createLoyaltyPass(
     body.passOverrides = { imageIds: { strip: imgIds.strip, hero: imgIds.hero } };
   }
 
-  // PassKit enrol endpoint (correct per docs)
-  const res = await fetch(`${API_BASE}/members/enrolMember`, {
+  const res = await fetch(`${API_BASE}/members/member`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify(body),
@@ -76,12 +79,12 @@ export async function createLoyaltyPass(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`PassKit enrolMember ${res.status}: ${err}`);
+    throw new Error(`PassKit create member ${res.status}: ${err}`);
   }
 
   const data = await res.json();
   const passId: string = data.id ?? data.passId ?? membershipId;
-  return { passId, passUrl: `${PASS_BASE}/${passId}` };
+  return { passId, passUrl: getPassKitPassUrl(passId) };
 }
 
 export async function updateLoyaltyPass(
