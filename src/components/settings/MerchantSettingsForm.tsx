@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/hooks/useAuth';
-import { getClientStorage } from '@/lib/firebase/client';
 import type { Merchant } from '@/types';
 
 interface Props {
@@ -91,21 +89,15 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
     try {
       await checkImageDimensions(file);
 
-      // Upload to Firebase Storage to get a public URL
-      const storage = getClientStorage();
-      const storageRef = ref(storage, `passkit-images/${merchant.id}/stamp_${stampIndex}_${Date.now()}`);
-      await uploadBytes(storageRef, file);
-      const imageUrl = await getDownloadURL(storageRef);
-
       const token = await user.getIdToken();
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('stampIndex', String(stampIndex));
+      fd.append('name', `${merchant.id}_stamp_${stampIndex}`);
       const res = await fetch('/api/passkit-upload-image', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          imageUrl,
-          stampIndex,
-          name: `${merchant.id}_stamp_${stampIndex}`,
-        }),
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
