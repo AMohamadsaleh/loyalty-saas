@@ -144,10 +144,7 @@ export async function uploadPassKitImage(base64Data: string, name: string): Prom
     headers: headers(),
     body: JSON.stringify({
       name,
-      imageData: {
-        strip: base64Data,  // Apple Wallet banner image
-        hero: base64Data,   // Google Wallet hero image
-      },
+      imageData: base64Data,
     }),
     signal: AbortSignal.timeout(20000),
   });
