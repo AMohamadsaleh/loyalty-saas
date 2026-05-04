@@ -49,7 +49,7 @@ export async function createLoyaltyPass(
 
   const body: Record<string, unknown> = {
     programId: process.env.PASSKIT_PROGRAM_ID,
-    tierId: process.env.PASSKIT_TIER_ID ?? 'base',
+    tierId: process.env.PASSKIT_TIER_ID ?? '222',
     externalId: membershipId,
     // points = current stamp count
     points: 0,
