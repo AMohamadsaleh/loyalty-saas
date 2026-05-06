@@ -27,6 +27,11 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
+  // Logo upload state
+  const [logoUrl, setLogoUrl] = useState<string | undefined>(merchant.logoUrl);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState('');
+
   // Track uploaded strip image IDs per stamp index (for display only; full pair saved in Firestore)
   const [stampImages, setStampImages] = useState<(string | undefined)[]>(
     () => Array.from({ length: merchant.stampTarget + 1 }, (_, i) => merchant.passkitStampImages?.[i]?.strip)
@@ -61,6 +66,32 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
       setError(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleLogoUpload(file: File) {
+    if (!user) return;
+    setLogoUploading(true);
+    setLogoError('');
+    try {
+      const token = await user.getIdToken();
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload-logo', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Upload failed');
+      }
+      const { logoUrl: url } = await res.json();
+      setLogoUrl(url);
+    } catch (err: unknown) {
+      setLogoError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setLogoUploading(false);
     }
   }
 
@@ -173,6 +204,40 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
             rows={2}
             className={inputClass}
           />
+        </div>
+
+        <div>
+          <label className={labelClass}>Store logo</label>
+          <div className="flex items-center gap-4">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoUrl}
+                alt="Store logo"
+                className="w-16 h-16 rounded-full object-cover border-2 border-slate-200 shrink-0"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-slate-100 border-2 border-slate-200 flex items-center justify-center shrink-0">
+                <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <label className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-slate-200 bg-slate-50 text-slate-600 text-xs font-medium cursor-pointer hover:border-blue-400 hover:bg-blue-50 hover:text-blue-600 transition-colors ${logoUploading ? 'pointer-events-none opacity-50' : ''}`}>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  disabled={logoUploading}
+                  onChange={(e) => { const file = e.target.files?.[0]; if (file) handleLogoUpload(file); e.target.value = ''; }}
+                />
+                {logoUploading ? 'Uploading…' : logoUrl ? 'Replace logo' : 'Upload logo'}
+              </label>
+              <p className="text-xs text-slate-400">JPEG, PNG or WebP — max 2 MB</p>
+              {logoError && <p className="text-xs text-red-600">{logoError}</p>}
+            </div>
+          </div>
         </div>
       </div>
 

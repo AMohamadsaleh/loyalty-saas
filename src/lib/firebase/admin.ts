@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
+import { getStorage, Storage } from 'firebase-admin/storage';
 
 let _app: App | null = null;
 let _db: Firestore | null = null;
@@ -45,5 +46,20 @@ export const adminDb = new Proxy({} as Firestore, {
 export const adminAuth = new Proxy({} as Auth, {
   get(_target, prop) {
     return (getAdminAuth() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
+
+let _storage: Storage | null = null;
+
+export function getAdminStorage(): Storage {
+  if (!_storage) {
+    _storage = getStorage(getAdminApp());
+  }
+  return _storage;
+}
+
+export const adminStorage = new Proxy({} as Storage, {
+  get(_target, prop) {
+    return (getAdminStorage() as unknown as Record<string | symbol, unknown>)[prop];
   },
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { WalletButtons } from './WalletButtons';
 import type { PublicMerchant } from '@/types';
 
@@ -12,39 +12,6 @@ interface Result {
   membershipId: string;
   passUrl: string | null;
   passError?: string | null;
-}
-
-function MembershipQR({ membershipId, merchant }: { membershipId: string; merchant: PublicMerchant }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    import('qrcode').then((QRCode) => {
-      QRCode.toCanvas(canvasRef.current!, membershipId, {
-        width: 200,
-        margin: 2,
-        color: { dark: '#0f172a', light: '#ffffff' },
-      });
-    });
-  }, [membershipId]);
-
-  return (
-    <div className="text-center space-y-4">
-      <div className="text-4xl">✅</div>
-      <p className="text-lg font-bold text-slate-900">You&apos;re registered!</p>
-      <p className="text-sm text-slate-500">Show this QR code at the counter to collect stamps</p>
-
-      <div className="flex justify-center bg-white rounded-xl p-4 border-2 border-slate-200 shadow-sm">
-        <canvas ref={canvasRef} className="rounded-lg" />
-      </div>
-
-      <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-        <p className="text-xs text-slate-400 font-mono break-all">{membershipId}</p>
-      </div>
-
-      <p className="text-xs text-slate-400">{merchant.name} loyalty card</p>
-    </div>
-  );
 }
 
 export function JoinForm({ merchant }: Props) {
@@ -79,28 +46,24 @@ export function JoinForm({ merchant }: Props) {
     }
   }
 
-  // Show wallet buttons if PassKit returned a real URL
-  if (result?.passUrl) {
+  if (result) {
     return (
-      <div className="space-y-4">
-        <WalletButtons passUrl={result.passUrl} merchantName={merchant.name} />
-        <MembershipQR membershipId={result.membershipId} merchant={merchant} />
-      </div>
-    );
-  }
+      <div className="space-y-4 text-center">
+        <div className="text-4xl">✅</div>
+        <p className="text-lg font-bold text-slate-900">You&apos;re registered!</p>
 
-  // Show QR code only (PassKit not configured or failed)
-  if (result?.membershipId) {
-    return (
-      <div className="space-y-4">
-        {result.passError && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+        {result.passUrl ? (
+          <>
+            <p className="text-sm text-slate-500">Add your loyalty card to your wallet</p>
+            <WalletButtons passUrl={result.passUrl} merchantName={merchant.name} />
+          </>
+        ) : (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
             <p className="text-sm text-amber-800">
-              Wallet pass is not available right now. Use this QR code at the counter.
+              Wallet pass is not available right now. Show this confirmation at the counter to get your first stamp.
             </p>
           </div>
         )}
-        <MembershipQR membershipId={result.membershipId} merchant={merchant} />
       </div>
     );
   }
