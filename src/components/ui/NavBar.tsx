@@ -20,7 +20,7 @@ const links = [
 export function NavBar({ active }: Props) {
   const router = useRouter();
   const { user } = useAuth();
-  const { merchant } = useMerchant();
+  const { merchant, loading: merchantLoading } = useMerchant();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +67,7 @@ export function NavBar({ active }: Props) {
             onClick={() => setOpen((v) => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none"
           >
-            {merchant?.name ?? user?.email?.split('@')[0] ?? '…'}
+            {merchantLoading ? '' : merchant?.name ?? ''}
             <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
             </svg>
