@@ -14,6 +14,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [storeName, setStoreName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,17 +27,15 @@ export default function LoginPage() {
     try {
       let credential;
       if (isSignUp) {
-        // Sign up: one API call handles merchant setup + session cookie together
         credential = await createUserWithEmailAndPassword(getClientAuth(), email, password);
         const idToken = await credential.user.getIdToken();
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken, name: email.split('@')[0] }),
+          body: JSON.stringify({ idToken, name: storeName.trim() || email.split('@')[0] }),
         });
         if (!res.ok) throw new Error('Account setup failed');
       } else {
-        // Sign in: set a lightweight client cookie — no extra API call needed
         credential = await signInWithEmailAndPassword(getClientAuth(), email, password);
         document.cookie = `auth=1; path=/; max-age=${60 * 60 * 24 * 5}; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`;
       }
@@ -62,6 +61,22 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {isSignUp && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                Store name
+              </label>
+              <input
+                type="text"
+                required
+                value={storeName}
+                onChange={(e) => setStoreName(e.target.value)}
+                placeholder="My Store"
+                className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
               Email address
@@ -106,7 +121,7 @@ export default function LoginPage() {
         </form>
 
         <button
-          onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
+          onClick={() => { setIsSignUp(!isSignUp); setError(''); setStoreName(''); }}
           className="mt-4 w-full text-sm text-slate-500 hover:text-blue-600 transition-colors"
         >
           {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}

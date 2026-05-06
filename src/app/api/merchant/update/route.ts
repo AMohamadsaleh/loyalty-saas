@@ -9,6 +9,7 @@ const schema = z.object({
   name: z.string().min(1).max(100).optional(),
   stampTarget: z.number().int().min(1).max(20).optional(),
   brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  logoUrl: z.string().url().max(500).or(z.literal('')).optional(),
   description: z.string().max(300).optional(),
   passkitProgramId: z.string().max(100).optional(),
   passkitTierId: z.string().max(100).optional(),
