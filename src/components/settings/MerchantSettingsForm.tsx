@@ -18,7 +18,6 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
     name: merchant.name,
     stampTarget: merchant.stampTarget,
     brandColor: merchant.brandColor ?? '#1E90FF',
-    logoUrl: merchant.logoUrl ?? '',
     description: merchant.description ?? '',
     passkitProgramId: merchant.passkitProgramId ?? '',
     passkitTierId: merchant.passkitTierId ?? '',
@@ -176,28 +175,6 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
           />
         </div>
 
-        <div>
-          <label className={labelClass}>Logo URL <span className="text-slate-400 font-normal">(optional)</span></label>
-          <div className="flex items-center gap-3">
-            {form.logoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={form.logoUrl}
-                alt="Logo preview"
-                className="w-10 h-10 rounded-full object-cover border-2 border-slate-200 shrink-0"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            )}
-            <input
-              type="url"
-              value={form.logoUrl}
-              onChange={(e) => set('logoUrl', e.target.value)}
-              placeholder="https://example.com/logo.png"
-              className={inputClass}
-            />
-          </div>
-          <p className="text-xs text-slate-400 mt-1">Paste a direct link to your logo image</p>
-        </div>
       </div>
 
       <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-5">

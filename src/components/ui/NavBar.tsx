@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { getClientAuth } from '@/lib/firebase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useMerchant } from '@/hooks/useMerchant';
 
 interface Props {
   active: 'scan' | 'activity' | 'settings';
@@ -19,6 +20,7 @@ const links = [
 export function NavBar({ active }: Props) {
   const router = useRouter();
   const { user } = useAuth();
+  const { merchant } = useMerchant();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +47,13 @@ export function NavBar({ active }: Props) {
   return (
     <nav className="bg-white border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
       <div className="max-w-2xl mx-auto px-4 flex items-center justify-between h-14">
-        <div className="flex gap-1">
+        <div className="flex items-center gap-3">
+          {merchant?.name && (
+            <span className="text-sm font-bold text-slate-900 pr-2 border-r border-slate-200">
+              {merchant.name}
+            </span>
+          )}
+          <div className="flex gap-1">
           {links.map((link) => (
             <Link
               key={link.key}
@@ -59,6 +67,7 @@ export function NavBar({ active }: Props) {
               {link.label}
             </Link>
           ))}
+          </div>
         </div>
 
         {/* Profile dropdown */}
