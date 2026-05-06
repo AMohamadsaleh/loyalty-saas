@@ -42,18 +42,10 @@ export function NavBar({ active }: Props) {
     router.replace('/login');
   }
 
-  const initial = user?.email?.[0]?.toUpperCase() ?? '?';
-
   return (
     <nav className="bg-white border-b-2 border-slate-200 sticky top-0 z-10 shadow-sm">
       <div className="max-w-2xl mx-auto px-4 flex items-center justify-between h-14">
-        <div className="flex items-center gap-3">
-          {merchant?.name && (
-            <span className="text-sm font-bold text-slate-900 pr-2 border-r border-slate-200">
-              {merchant.name}
-            </span>
-          )}
-          <div className="flex gap-1">
+        <div className="flex gap-1">
           {links.map((link) => (
             <Link
               key={link.key}
@@ -67,16 +59,18 @@ export function NavBar({ active }: Props) {
               {link.label}
             </Link>
           ))}
-          </div>
         </div>
 
-        {/* Profile dropdown */}
+        {/* Profile dropdown — store name as trigger */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setOpen((v) => !v)}
-            className="w-9 h-9 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors focus:outline-none"
           >
-            {initial}
+            {merchant?.name ?? user?.email?.split('@')[0] ?? '…'}
+            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+            </svg>
           </button>
 
           {open && (
