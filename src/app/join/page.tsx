@@ -1,11 +1,11 @@
 import { JoinForm } from '@/components/join/JoinForm';
-import type { Merchant } from '@/types';
+import type { PublicMerchant } from '@/types';
 
 interface Props {
   searchParams: { merchantId?: string };
 }
 
-async function getMerchantPublic(merchantId: string): Promise<Merchant | null> {
+async function getMerchantPublic(merchantId: string): Promise<PublicMerchant | null> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
     const res = await fetch(`${baseUrl}/api/merchant/${merchantId}/public`, {
@@ -46,7 +46,7 @@ export default async function JoinPage({ searchParams }: Props) {
         {/* Header */}
         <div
           className="px-6 py-8 text-white text-center"
-          style={{ backgroundColor: merchant.brandColor }}
+          style={{ backgroundColor: merchant.brandColor ?? '#1E90FF' }}
         >
           {merchant.logoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -57,16 +57,17 @@ export default async function JoinPage({ searchParams }: Props) {
             />
           )}
           <h1 className="text-xl font-bold">{merchant.name}</h1>
-          <p className="text-sm mt-1 opacity-80">
-            {merchant.stampTarget} visits = {merchant.rewardName}
-          </p>
         </div>
 
         {/* Form */}
         <div className="p-6">
-          <p className="text-sm text-gray-600 mb-4 text-center">
-            Join our loyalty program and get rewarded for every visit.
-          </p>
+          {merchant.description ? (
+            <p className="text-sm text-gray-600 mb-4 text-center">{merchant.description}</p>
+          ) : (
+            <p className="text-sm text-gray-600 mb-4 text-center">
+              Join our loyalty program and get rewarded for every visit.
+            </p>
+          )}
           <JoinForm merchant={merchant} />
         </div>
       </div>

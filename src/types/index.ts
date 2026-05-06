@@ -4,10 +4,9 @@ export interface Merchant {
   ownerId: string;
   stampTarget: number;
   rewardName: string;
-  templateType: 'grid_6' | 'circle_5' | 'bar_10';
-  brandColor: string;
-  logoUrl: string;
-  displayMode: 'text' | 'image';
+  brandColor?: string;
+  logoUrl?: string;
+  description?: string;
   isActive: boolean;
   createdAt: number;
   // PassKit — set manually after creating program+tier in PassKit dashboard
@@ -16,6 +15,15 @@ export interface Merchant {
   merchantInfo?: string;
   // PassKit image IDs per stamp count — strip = Apple Wallet, hero = Google Wallet
   passkitStampImages?: Array<{ strip: string; hero: string } | null>;
+}
+
+export interface PublicMerchant {
+  id: string;
+  name: string;
+  brandColor?: string;
+  logoUrl?: string;
+  description?: string;
+  isActive: boolean;
 }
 
 export interface Customer {
@@ -51,7 +59,6 @@ export interface Transaction {
 
 export interface ScanResult {
   progressText: string;
-  imageUrl?: string;
   rewardUnlocked: boolean;
   completedRewards: number;
 }

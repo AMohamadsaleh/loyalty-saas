@@ -24,20 +24,9 @@ export function ScanResultCard({ result, onScanAgain }: Props) {
         </div>
       )}
 
-      {result.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={result.imageUrl}
-          alt={result.progressText}
-          className="w-full max-w-xs mx-auto rounded-xl shadow-md"
-        />
-      )}
-
-      {!result.imageUrl && (
-        <div className="text-center bg-white border-2 border-slate-200 rounded-xl py-6">
-          <p className="text-3xl font-bold text-slate-900">{result.progressText}</p>
-        </div>
-      )}
+      <div className="text-center bg-white border-2 border-slate-200 rounded-xl py-6">
+        <p className="text-3xl font-bold text-slate-900">{result.progressText}</p>
+      </div>
 
       <button
         onClick={onScanAgain}

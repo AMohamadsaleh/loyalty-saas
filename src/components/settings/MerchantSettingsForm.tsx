@@ -18,9 +18,8 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
     name: merchant.name,
     stampTarget: merchant.stampTarget,
     rewardName: merchant.rewardName,
-    templateType: merchant.templateType,
-    brandColor: merchant.brandColor,
-    displayMode: merchant.displayMode,
+    brandColor: merchant.brandColor ?? '#1E90FF',
+    description: merchant.description ?? '',
     passkitProgramId: merchant.passkitProgramId ?? '',
     passkitTierId: merchant.passkitTierId ?? '',
     merchantInfo: merchant.merchantInfo ?? '',
@@ -164,6 +163,18 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
             </span>
           </div>
         </div>
+
+        <div>
+          <label className={labelClass}>Description <span className="text-slate-400 font-normal">(shown on join page)</span></label>
+          <textarea
+            value={form.description}
+            onChange={(e) => set('description', e.target.value)}
+            placeholder="e.g. Join our loyalty program and earn rewards for every visit!"
+            maxLength={300}
+            rows={2}
+            className={inputClass}
+          />
+        </div>
       </div>
 
       <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-5">
@@ -191,31 +202,6 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
             placeholder="e.g. Free Coffee"
             className={inputClass}
           />
-        </div>
-
-        <div>
-          <label className={labelClass}>Stamp card template</label>
-          <select
-            value={form.templateType}
-            onChange={(e) => set('templateType', e.target.value as Merchant['templateType'])}
-            className={inputClass}
-          >
-            <option value="grid_6">Grid (6 stamps)</option>
-            <option value="circle_5">Circle (5 stamps)</option>
-            <option value="bar_10">Progress bar (10 stamps)</option>
-          </select>
-        </div>
-
-        <div>
-          <label className={labelClass}>Stamp display mode</label>
-          <select
-            value={form.displayMode}
-            onChange={(e) => set('displayMode', e.target.value as Merchant['displayMode'])}
-            className={inputClass}
-          >
-            <option value="image">Image (stamp card visual)</option>
-            <option value="text">Text only</option>
-          </select>
         </div>
       </div>
 

@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { WalletButtons } from './WalletButtons';
-import type { Merchant } from '@/types';
+import type { PublicMerchant } from '@/types';
 
 interface Props {
-  merchant: Merchant;
+  merchant: PublicMerchant;
 }
 
 interface Result {
@@ -14,7 +14,7 @@ interface Result {
   passError?: string | null;
 }
 
-function MembershipQR({ membershipId, merchant }: { membershipId: string; merchant: Merchant }) {
+function MembershipQR({ membershipId, merchant }: { membershipId: string; merchant: PublicMerchant }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -142,7 +142,7 @@ export function JoinForm({ merchant }: Props) {
         type="submit"
         disabled={loading}
         className="w-full py-3 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-colors shadow-sm"
-        style={{ backgroundColor: merchant.brandColor }}
+        style={{ backgroundColor: merchant.brandColor ?? '#1E90FF' }}
       >
         {loading ? 'Creating your card…' : 'Get my loyalty card'}
       </button>

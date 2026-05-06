@@ -133,6 +133,29 @@ export async function updateLoyaltyPass(
   }
 }
 
+export async function getPassKitProgramInfo(programId: string): Promise<{
+  name?: string;
+  brandColor?: string;
+  logoUrl?: string;
+} | null> {
+  try {
+    const res = await fetch(`${API_BASE}/loyalties/loyaltyProgram/${programId}`, {
+      method: 'GET',
+      headers: headers(),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    // Extract name; color + logo field paths need verification from PassKit response
+    const name: string | undefined = data.name ?? data.localizedName?.defaultValue ?? undefined;
+    const brandColor: string | undefined = data.colors?.backgroundColor ?? undefined;
+    const logoUrl: string | undefined = undefined; // set once PassKit image CDN URL pattern is confirmed
+    return { name, brandColor, logoUrl };
+  } catch {
+    return null;
+  }
+}
+
 export async function uploadPassKitImage(base64: string, name: string): Promise<{ strip: string; hero: string }> {
   const res = await fetch(`${API_BASE}/images`, {
     method: 'POST',

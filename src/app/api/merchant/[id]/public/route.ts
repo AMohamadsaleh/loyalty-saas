@@ -12,17 +12,13 @@ export async function GET(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  // Return only public-safe fields
   return NextResponse.json({
     merchant: {
       id: merchant.id,
       name: merchant.name,
-      stampTarget: merchant.stampTarget,
-      rewardName: merchant.rewardName,
-      templateType: merchant.templateType,
       brandColor: merchant.brandColor,
       logoUrl: merchant.logoUrl,
-      displayMode: merchant.displayMode,
+      description: merchant.description,
       isActive: merchant.isActive,
     },
   });

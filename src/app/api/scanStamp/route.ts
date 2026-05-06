@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { getMerchant } from '@/lib/firestore/merchants';
 import { getMembership, getMembershipByPassId } from '@/lib/firestore/memberships';
-import { stampImageUrl } from '@/lib/utils/stampImageUrl';
 import { isCooldownActive, isDailyLimitReached, todayString } from '@/lib/utils/scanValidation';
 import { updateLoyaltyPass } from '@/lib/passkit/client';
 import type { Membership, Transaction } from '@/types';
@@ -102,7 +101,7 @@ export async function POST(req: NextRequest) {
     );
     if (limited) throw { status: 429, error: 'Daily scan limit reached' };
 
-    // 5. Fetch merchant (needed for stampTarget, rewardName, displayMode)
+    // 5. Fetch merchant (needed for stampTarget)
     const merchant = await getMerchant(membership.merchantId);
     if (!merchant) throw { status: 500, error: 'Merchant not found' };
 
@@ -117,12 +116,8 @@ export async function POST(req: NextRequest) {
       rewardUnlocked = true;
     }
 
-    // 7. Build response text + image
+    // 7. Build response text
     const progressText = `${newStamps} / ${merchant.stampTarget} visits`;
-    const imageUrl =
-      merchant.displayMode === 'image'
-        ? stampImageUrl(merchant.templateType, newStamps)
-        : undefined;
 
     // 8. Write membership update inside transaction
     const today = todayString();
@@ -155,7 +150,6 @@ export async function POST(req: NextRequest) {
 
     return {
       progressText,
-      imageUrl,
       rewardUnlocked,
       completedRewards: newCompletedRewards,
       passId: membership.passId,
@@ -192,7 +186,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     progressText: result.progressText,
-    imageUrl: result.imageUrl,
     rewardUnlocked: result.rewardUnlocked,
     completedRewards: result.completedRewards,
   });
