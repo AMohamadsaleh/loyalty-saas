@@ -3,7 +3,6 @@ export interface Merchant {
   name: string;
   ownerId: string;
   stampTarget: number;
-  rewardName: string;
   brandColor?: string;
   logoUrl?: string;
   description?: string;

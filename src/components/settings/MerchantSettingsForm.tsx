@@ -17,7 +17,6 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
   const [form, setForm] = useState({
     name: merchant.name,
     stampTarget: merchant.stampTarget,
-    rewardName: merchant.rewardName,
     brandColor: merchant.brandColor ?? '#1E90FF',
     description: merchant.description ?? '',
     passkitProgramId: merchant.passkitProgramId ?? '',
@@ -193,16 +192,6 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
           <p className="text-xs text-slate-400 mt-1">Between 1 and 20</p>
         </div>
 
-        <div>
-          <label className={labelClass}>Reward name</label>
-          <input
-            type="text"
-            value={form.rewardName}
-            onChange={(e) => set('rewardName', e.target.value)}
-            placeholder="e.g. Free Coffee"
-            className={inputClass}
-          />
-        </div>
       </div>
 
       <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-5">

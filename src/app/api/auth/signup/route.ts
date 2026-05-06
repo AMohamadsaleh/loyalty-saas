@@ -28,7 +28,6 @@ export async function POST(req: NextRequest) {
       name: name || 'My Store',
       ownerId: uid,
       stampTarget: 6,
-      rewardName: 'Free Reward',
       brandColor: '#1E90FF',
       logoUrl: '',
       isActive: true,
