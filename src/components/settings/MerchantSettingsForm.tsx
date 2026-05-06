@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { Merchant } from '@/types';
 
 interface Props {
@@ -14,6 +15,7 @@ const labelClass = 'block text-sm font-semibold text-slate-700 mb-1.5';
 
 export function MerchantSettingsForm({ merchant, onSaved }: Props) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [form, setForm] = useState({
     name: merchant.name,
     stampTarget: merchant.stampTarget,
@@ -135,21 +137,21 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
     <form onSubmit={handleSave} className="space-y-5 max-w-lg">
 
       <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-5">
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Store Info</h2>
+        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t.settings.storeInfo}</h2>
 
         <div>
-          <label className={labelClass}>Store name</label>
+          <label className={labelClass}>{t.settings.storeName}</label>
           <input
             type="text"
             value={form.name}
             onChange={(e) => set('name', e.target.value)}
-            placeholder="My Store"
+            placeholder={t.settings.storeNamePlaceholder}
             className={inputClass}
           />
         </div>
 
         <div>
-          <label className={labelClass}>Brand color</label>
+          <label className={labelClass}>{t.settings.brandColor}</label>
           <div className="flex items-center gap-3">
             <input
               type="color"
@@ -164,11 +166,11 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
         </div>
 
         <div>
-          <label className={labelClass}>Description <span className="text-slate-400 font-normal">(shown on join page)</span></label>
+          <label className={labelClass}>{t.settings.description} <span className="text-slate-400 font-normal">({t.settings.descriptionHint})</span></label>
           <textarea
             value={form.description}
             onChange={(e) => set('description', e.target.value)}
-            placeholder="e.g. Join our loyalty program and earn rewards for every visit!"
+            placeholder={t.settings.descriptionPlaceholder}
             maxLength={300}
             rows={2}
             className={inputClass}
@@ -178,10 +180,10 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
       </div>
 
       <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-5">
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Loyalty Program</h2>
+        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t.settings.loyaltyProgram}</h2>
 
         <div>
-          <label className={labelClass}>Stamps needed for reward</label>
+          <label className={labelClass}>{t.settings.stampsForReward}</label>
           <input
             type="number"
             min={1}
@@ -190,19 +192,16 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
             onChange={(e) => set('stampTarget', parseInt(e.target.value))}
             className={inputClass}
           />
-          <p className="text-xs text-slate-400 mt-1">Between 1 and 20</p>
+          <p className="text-xs text-slate-400 mt-1">{t.settings.between}</p>
         </div>
 
       </div>
 
       <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-5">
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">PassKit Wallet Pass</h2>
-        <p className="text-xs text-slate-400">
-          Create a program in PassKit dashboard, then paste the IDs here.
-          Each merchant needs their own program for their branded pass.
-        </p>
+        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t.settings.passkitTitle}</h2>
+        <p className="text-xs text-slate-400">{t.settings.passkitDesc}</p>
         <div>
-          <label className={labelClass}>PassKit Program ID</label>
+          <label className={labelClass}>{t.settings.programId}</label>
           <input
             type="text"
             value={form.passkitProgramId}
@@ -212,7 +211,7 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
           />
         </div>
         <div>
-          <label className={labelClass}>PassKit Tier ID</label>
+          <label className={labelClass}>{t.settings.tierId}</label>
           <input
             type="text"
             value={form.passkitTierId}
@@ -222,25 +221,24 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
           />
         </div>
         <div>
-          <label className={labelClass}>Program Info (معلومات)</label>
+          <label className={labelClass}>{t.settings.programInfo}</label>
           <textarea
             value={form.merchantInfo}
             onChange={(e) => set('merchantInfo', e.target.value)}
-            placeholder="Short description shown on the wallet pass"
+            placeholder={t.settings.programInfoPlaceholder}
             maxLength={200}
             rows={2}
             className={inputClass}
           />
-          <p className="text-xs text-slate-400 mt-1">Shown as &quot;معلومات&quot; on the customer&apos;s wallet pass</p>
+          <p className="text-xs text-slate-400 mt-1">{t.settings.programInfoHint}</p>
         </div>
       </div>
 
       <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-5">
         <div>
-          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Stamp Progress Images</h2>
+          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">{t.settings.stampImages}</h2>
           <p className="text-xs text-slate-400 mt-1">
-            Upload one image per stamp count (0 through {form.stampTarget}). These are sent to PassKit
-            and displayed on the wallet pass. Minimum: 1125&times;336 px — recommended: 1125&times;432 px PNG.
+            {t.settings.stampImagesDescPre} {form.stampTarget}{t.settings.stampImagesDescPost}
           </p>
         </div>
 
@@ -254,7 +252,11 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
             const isUploading = uploadingIndex === i;
             const isJustUploaded = justUploaded.has(i);
             const anyUploading = uploadingIndex !== null;
-            const label = i === 0 ? '0 stamps (empty card)' : i === form.stampTarget ? `${i} stamps (full — reward!)` : `${i} stamp${i === 1 ? '' : 's'}`;
+            const label = i === 0
+              ? `0 ${t.settings.emptyCard}`
+              : i === form.stampTarget
+                ? `${i} ${t.settings.fullCard}`
+                : `${i} ${i === 1 ? t.settings.stampLabel : t.settings.stampsLabel}`;
             return (
               <div key={i} className="flex items-center gap-3">
                 <span className="w-40 text-xs text-slate-600 shrink-0">{label}</span>
@@ -265,16 +267,16 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                     </svg>
-                    Uploading…
+                    {t.settings.uploading}
                   </div>
                 ) : isJustUploaded ? (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-green-400 bg-green-100 text-green-800 text-xs font-semibold animate-pulse">
-                    ✓ Upload successful!
+                    {t.settings.uploadSuccessful}
                   </div>
                 ) : hasImage ? (
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-green-300 bg-green-50 text-green-700 text-xs font-medium">
-                      <span>✓ Uploaded</span>
+                      <span>{t.settings.uploaded}</span>
                       <span className="text-green-500 font-mono" title={stampImages[i]}>{stampImages[i]?.slice(0, 8)}…</span>
                     </div>
                     <label className={`px-3 py-2 rounded-lg border-2 border-slate-200 bg-white text-slate-500 text-xs font-medium cursor-pointer hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors ${anyUploading ? 'pointer-events-none opacity-40' : ''}`}>
@@ -285,7 +287,7 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
                         disabled={anyUploading}
                         onChange={(e) => { const file = e.target.files?.[0]; if (file) handleImageUpload(i, file); e.target.value = ''; }}
                       />
-                      Replace
+                      {t.settings.replace}
                     </label>
                   </div>
                 ) : (
@@ -297,7 +299,7 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
                       disabled={anyUploading}
                       onChange={(e) => { const file = e.target.files?.[0]; if (file) handleImageUpload(i, file); e.target.value = ''; }}
                     />
-                    Choose image
+                    {t.settings.chooseImage}
                   </label>
                 )}
               </div>
@@ -314,7 +316,7 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
 
       {saved && (
         <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-          <p className="text-sm text-green-700 font-medium">Settings saved successfully!</p>
+          <p className="text-sm text-green-700 font-medium">{t.settings.savedOk}</p>
         </div>
       )}
 
@@ -323,7 +325,7 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
         disabled={saving}
         className="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
       >
-        {saving ? 'Saving…' : 'Save settings'}
+        {saving ? t.settings.saving : t.settings.save}
       </button>
     </form>
   );

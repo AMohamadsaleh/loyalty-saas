@@ -1,14 +1,15 @@
 'use client';
 
 import type { Transaction } from '@/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   transactions: Transaction[];
   loading: boolean;
 }
 
-function formatTime(ts: number): string {
-  return new Date(ts).toLocaleString(undefined, {
+function formatTime(ts: number, lang: string): string {
+  return new Date(ts).toLocaleString(lang === 'ar' ? 'ar-SA' : undefined, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -17,6 +18,8 @@ function formatTime(ts: number): string {
 }
 
 export function TransactionList({ transactions, loading }: Props) {
+  const { t, lang } = useLanguage();
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -31,8 +34,8 @@ export function TransactionList({ transactions, loading }: Props) {
     return (
       <div className="text-center py-20 bg-white rounded-2xl border-2 border-slate-200">
         <p className="text-3xl mb-3">📋</p>
-        <p className="text-slate-700 font-semibold">No activity yet</p>
-        <p className="text-slate-400 text-sm mt-1">Start scanning customers to see transactions here</p>
+        <p className="text-slate-700 font-semibold">{t.activity.noActivity}</p>
+        <p className="text-slate-400 text-sm mt-1">{t.activity.noActivityDesc}</p>
       </div>
     );
   }
@@ -52,9 +55,9 @@ export function TransactionList({ transactions, loading }: Props) {
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">
-                {tx.type === 'reward' ? 'Reward unlocked' : 'Stamp added'}
+                {tx.type === 'reward' ? t.activity.reward : t.activity.stamp}
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">{formatTime(tx.createdAt)}</p>
+              <p className="text-xs text-slate-500 mt-0.5">{formatTime(tx.createdAt, lang)}</p>
             </div>
           </div>
           <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
@@ -62,7 +65,7 @@ export function TransactionList({ transactions, loading }: Props) {
               ? 'bg-green-100 text-green-800'
               : 'bg-blue-100 text-blue-800'
           }`}>
-            {tx.type === 'reward' ? '🏆 Reward' : '+1 stamp'}
+            {tx.type === 'reward' ? t.activity.rewardBadge : t.activity.stampBadge}
           </span>
         </div>
       ))}

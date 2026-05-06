@@ -9,9 +9,11 @@ import {
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
 import { getClientAuth } from '@/lib/firebase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t, lang, setLang } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [storeName, setStoreName] = useState('');
@@ -51,12 +53,22 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-md border border-slate-200 p-8">
+        {/* Language toggle */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+            className="px-2.5 py-1 rounded-lg text-xs font-bold border-2 border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+          >
+            {t.nav.langToggle}
+          </button>
+        </div>
+
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">
-            {isSignUp ? 'Create account' : 'Welcome back'}
+            {isSignUp ? t.login.createAccount : t.login.welcomeBack}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            {isSignUp ? 'Start your loyalty program' : 'Sign in to your store'}
+            {isSignUp ? t.login.startLoyalty : t.login.signInToStore}
           </p>
         </div>
 
@@ -64,14 +76,14 @@ export default function LoginPage() {
           {isSignUp && (
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                Store name
+                {t.login.storeName}
               </label>
               <input
                 type="text"
                 required
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
-                placeholder="My Store"
+                placeholder={t.login.storeNamePlaceholder}
                 className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
@@ -79,20 +91,20 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Email address
+              {t.login.email}
             </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t.login.emailPlaceholder}
               className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-              Password
+              {t.login.password}
             </label>
             <input
               type="password"
@@ -100,7 +112,7 @@ export default function LoginPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Min. 6 characters"
+              placeholder={t.login.passwordPlaceholder}
               className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
@@ -116,7 +128,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors mt-2"
           >
-            {loading ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in'}
+            {loading ? t.login.pleaseWait : isSignUp ? t.login.createBtn : t.login.signInBtn}
           </button>
         </form>
 
@@ -124,7 +136,7 @@ export default function LoginPage() {
           onClick={() => { setIsSignUp(!isSignUp); setError(''); setStoreName(''); }}
           className="mt-4 w-full text-sm text-slate-500 hover:text-blue-600 transition-colors"
         >
-          {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+          {isSignUp ? t.login.haveAccount : t.login.noAccount}
         </button>
       </div>
     </div>

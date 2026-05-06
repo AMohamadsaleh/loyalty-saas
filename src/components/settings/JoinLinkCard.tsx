@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   merchantId: string;
 }
 
 export function JoinLinkCard({ merchantId }: Props) {
+  const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [copied, setCopied] = useState(false);
   const joinUrl = `${process.env.NEXT_PUBLIC_APP_URL}/join?merchantId=${merchantId}`;
@@ -31,18 +33,14 @@ export function JoinLinkCard({ merchantId }: Props) {
   return (
     <div className="bg-white border-2 border-slate-200 rounded-xl p-5 space-y-4">
       <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider">
-        Customer Join Link
+        {t.joinLink.title}
       </h2>
-      <p className="text-sm text-slate-600">
-        Share this link or print the QR code — customers open it to get their loyalty card.
-      </p>
+      <p className="text-sm text-slate-600">{t.joinLink.desc}</p>
 
-      {/* QR Code */}
       <div className="flex justify-center bg-slate-50 rounded-xl p-4 border border-slate-200">
         <canvas ref={canvasRef} className="rounded-lg" />
       </div>
 
-      {/* URL + Copy */}
       <div className="flex items-center gap-2">
         <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 overflow-hidden">
           <p className="text-xs text-slate-600 truncate font-mono">{joinUrl}</p>
@@ -55,16 +53,15 @@ export function JoinLinkCard({ merchantId }: Props) {
               : 'bg-blue-600 text-white hover:bg-blue-700'
           }`}
         >
-          {copied ? 'Copied!' : 'Copy link'}
+          {copied ? t.joinLink.copied : t.joinLink.copy}
         </button>
       </div>
 
-      {/* Print button */}
       <button
         onClick={() => window.print()}
         className="w-full py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors"
       >
-        Print QR code
+        {t.joinLink.print}
       </button>
     </div>
   );

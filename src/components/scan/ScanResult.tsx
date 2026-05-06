@@ -1,6 +1,7 @@
 'use client';
 
 import type { ScanResult } from '@/types';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   result: ScanResult;
@@ -8,24 +9,26 @@ interface Props {
 }
 
 export function ScanResultCard({ result, onScanAgain }: Props) {
+  const { t } = useLanguage();
+
   return (
     <div className="space-y-4">
       {result.rewardRedeemed ? (
         <div className="bg-purple-50 border-2 border-purple-300 rounded-2xl p-6 text-center">
           <div className="text-5xl mb-3">✅</div>
-          <p className="text-purple-900 font-bold text-xl">Reward Given!</p>
-          <p className="text-purple-700 text-sm mt-1 font-medium">Card has been reset for next round</p>
+          <p className="text-purple-900 font-bold text-xl">{t.scanResult.rewardGiven}</p>
+          <p className="text-purple-700 text-sm mt-1 font-medium">{t.scanResult.rewardGivenDesc}</p>
         </div>
       ) : result.rewardUnlocked ? (
         <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-6 text-center">
           <div className="text-5xl mb-3">🎉</div>
-          <p className="text-green-900 font-bold text-xl">Reward Ready!</p>
-          <p className="text-green-700 text-sm mt-1 font-medium">Give the reward, then scan again to reset the card</p>
+          <p className="text-green-900 font-bold text-xl">{t.scanResult.rewardReady}</p>
+          <p className="text-green-700 text-sm mt-1 font-medium">{t.scanResult.rewardReadyDesc}</p>
         </div>
       ) : (
         <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 text-center">
           <div className="text-5xl mb-3">✅</div>
-          <p className="text-blue-900 font-bold text-xl">Stamp Added!</p>
+          <p className="text-blue-900 font-bold text-xl">{t.scanResult.stampAdded}</p>
           <p className="text-blue-700 text-sm mt-1 font-medium">{result.progressText}</p>
         </div>
       )}
@@ -38,7 +41,7 @@ export function ScanResultCard({ result, onScanAgain }: Props) {
         onClick={onScanAgain}
         className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-colors"
       >
-        Scan next customer
+        {t.scanResult.scanNext}
       </button>
     </div>
   );

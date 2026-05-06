@@ -8,6 +8,7 @@ import { QrScanner } from '@/components/scan/QrScanner';
 import { ScanResultCard } from '@/components/scan/ScanResult';
 import { NavBar } from '@/components/ui/NavBar';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { ScanResult } from '@/types';
 
 type State =
@@ -18,6 +19,7 @@ type State =
 
 export default function ScanPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [state, setState] = useState<State>({ kind: 'scanning' });
 
   const handleScan = useCallback(
@@ -54,21 +56,19 @@ export default function ScanPage() {
     <AuthGuard>
       <NavBar active="scan" />
       <main className="max-w-md mx-auto px-4 py-8">
-        <h1 className="text-xl font-bold text-gray-900 mb-6 text-center">Scan Customer Card</h1>
+        <h1 className="text-xl font-bold text-gray-900 mb-6 text-center">{t.scan.title}</h1>
 
         {state.kind === 'scanning' && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden p-4">
             <QrScanner onScan={handleScan} active />
-            <p className="text-xs text-gray-400 text-center mt-3">
-              Point camera at customer&apos;s QR code
-            </p>
+            <p className="text-xs text-gray-400 text-center mt-3">{t.scan.hint}</p>
           </div>
         )}
 
         {state.kind === 'loading' && (
           <div className="flex flex-col items-center gap-3 py-16">
             <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-gray-500">Adding stamp…</p>
+            <p className="text-sm text-gray-500">{t.scan.adding}</p>
           </div>
         )}
 
@@ -86,7 +86,7 @@ export default function ScanPage() {
               onClick={() => setState({ kind: 'scanning' })}
               className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition-colors"
             >
-              Try again
+              {t.scan.tryAgain}
             </button>
           </div>
         )}
