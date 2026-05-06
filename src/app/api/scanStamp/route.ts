@@ -3,7 +3,8 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { getMerchant } from '@/lib/firestore/merchants';
-import { getMembership, getMembershipByPassId } from '@/lib/firestore/memberships';
+import { getMembership, getMembershipByPassId, findMembership } from '@/lib/firestore/memberships';
+import { getCustomerByPhone } from '@/lib/firestore/customers';
 import { isCooldownActive, isDailyLimitReached, todayString } from '@/lib/utils/scanValidation';
 import { updateLoyaltyPass } from '@/lib/passkit/client';
 import type { Membership, Transaction } from '@/types';
@@ -48,31 +49,49 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
   }
 
-  const { membershipId: scannedId } = await req.json();
-  const candidates = scanCandidates(scannedId);
-  if (candidates.length === 0) return NextResponse.json({ error: 'Missing membershipId' }, { status: 400 });
+  const body = await req.json();
+  const { phone } = body as { phone?: string };
+  const scannedId = body.membershipId;
 
-  // Resolve the real Firestore membership ID.
-  // If the pass barcode uses PassKit's ${pid} instead of ${eid}, the scanned value
-  // is the PassKit internal ID — fall back to a passId lookup.
   let membershipId: string | null = null;
-  for (const candidate of candidates) {
-    const direct = await getMembership(candidate);
-    if (direct) {
-      membershipId = direct.id;
-      break;
+
+  if (phone) {
+    // Phone-based lookup: find customer by phone, then their membership at this merchant
+    const customer = await getCustomerByPhone(phone.trim());
+    if (!customer) {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+    }
+    const membership = await findMembership(merchantUid, customer.id);
+    if (!membership) {
+      return NextResponse.json({ error: 'Membership not found' }, { status: 404 });
+    }
+    membershipId = membership.id;
+  } else {
+    // QR-based lookup
+    const candidates = scanCandidates(scannedId);
+    if (candidates.length === 0) return NextResponse.json({ error: 'Missing membershipId' }, { status: 400 });
+
+    // Resolve the real Firestore membership ID.
+    // If the pass barcode uses PassKit's ${pid} instead of ${eid}, the scanned value
+    // is the PassKit internal ID — fall back to a passId lookup.
+    for (const candidate of candidates) {
+      const direct = await getMembership(candidate);
+      if (direct) {
+        membershipId = direct.id;
+        break;
+      }
+
+      const byPassId = await getMembershipByPassId(candidate);
+      if (byPassId) {
+        membershipId = byPassId.id;
+        break;
+      }
     }
 
-    const byPassId = await getMembershipByPassId(candidate);
-    if (byPassId) {
-      membershipId = byPassId.id;
-      break;
+    if (!membershipId) {
+      console.warn('[scanStamp] membership not found for scanned candidates:', candidates);
+      return NextResponse.json({ error: 'Membership not found' }, { status: 404 });
     }
-  }
-
-  if (!membershipId) {
-    console.warn('[scanStamp] membership not found for scanned candidates:', candidates);
-    return NextResponse.json({ error: 'Membership not found' }, { status: 404 });
   }
 
   // Use Firestore transaction to prevent race conditions

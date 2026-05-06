@@ -25,6 +25,8 @@ export function JoinForm({ merchant }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!name.trim()) { setError('Name is required'); return; }
+    if (!phone.trim()) { setError('Phone number is required'); return; }
     setError('');
     setLoading(true);
 
@@ -72,25 +74,27 @@ export function JoinForm({ merchant }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-          {t.join.yourName} <span className="text-slate-400 font-normal">{t.join.optional}</span>
+          {t.join.yourName}
         </label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Jane Smith"
+          required
           className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
         />
       </div>
       <div>
         <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-          {t.join.phone} <span className="text-slate-400 font-normal">{t.join.optional}</span>
+          {t.join.phone}
         </label>
         <input
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder={t.join.phonePlaceholder}
+          required
           className="w-full px-3.5 py-2.5 bg-white border-2 border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
         />
       </div>
