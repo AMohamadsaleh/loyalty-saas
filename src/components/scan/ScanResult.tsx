@@ -10,11 +10,17 @@ interface Props {
 export function ScanResultCard({ result, onScanAgain }: Props) {
   return (
     <div className="space-y-4">
-      {result.rewardUnlocked ? (
+      {result.rewardRedeemed ? (
+        <div className="bg-purple-50 border-2 border-purple-300 rounded-2xl p-6 text-center">
+          <div className="text-5xl mb-3">✅</div>
+          <p className="text-purple-900 font-bold text-xl">Reward Given!</p>
+          <p className="text-purple-700 text-sm mt-1 font-medium">Card has been reset for next round</p>
+        </div>
+      ) : result.rewardUnlocked ? (
         <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-6 text-center">
           <div className="text-5xl mb-3">🎉</div>
-          <p className="text-green-900 font-bold text-xl">Reward Unlocked!</p>
-          <p className="text-green-700 text-sm mt-1 font-medium">Card has been reset for next round</p>
+          <p className="text-green-900 font-bold text-xl">Reward Ready!</p>
+          <p className="text-green-700 text-sm mt-1 font-medium">Give the reward, then scan again to reset the card</p>
         </div>
       ) : (
         <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 text-center">

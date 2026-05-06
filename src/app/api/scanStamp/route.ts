@@ -106,14 +106,27 @@ export async function POST(req: NextRequest) {
     if (!merchant) throw { status: 500, error: 'Merchant not found' };
 
     // 6. Stamp logic
-    let newStamps = membership.stamps + 1;
+    // If card is already full (stamps >= stampTarget), this scan is the merchant
+    // confirming the reward was given — reset the card.
+    // Otherwise just add a stamp; if it now hits the target, mark reward ready but
+    // don't reset yet (merchant needs one more scan to confirm + reset).
+    const cardWasFull = membership.stamps >= merchant.stampTarget;
+    let newStamps: number;
     let newCompletedRewards = membership.completedRewards;
     let rewardUnlocked = false;
+    let rewardRedeemed = false;
 
-    if (newStamps >= merchant.stampTarget) {
+    if (cardWasFull) {
       newStamps = 0;
       newCompletedRewards += 1;
-      rewardUnlocked = true;
+      rewardRedeemed = true;
+    } else {
+      newStamps = membership.stamps + 1;
+      if (newStamps >= merchant.stampTarget) {
+        rewardUnlocked = true;
+        // Keep at stampTarget — do NOT reset until merchant scans again
+        newStamps = merchant.stampTarget;
+      }
     }
 
     // 7. Build response text
@@ -134,7 +147,7 @@ export async function POST(req: NextRequest) {
     const transactionData: Omit<Transaction, 'id'> = {
       merchantId: membership.merchantId,
       customerId: membership.customerId,
-      type: rewardUnlocked ? 'reward' : 'stamp',
+      type: rewardRedeemed ? 'reward' : 'stamp',
       value: 1,
       createdBy: merchantUid,
       createdAt: Date.now(),
@@ -151,6 +164,7 @@ export async function POST(req: NextRequest) {
     return {
       progressText,
       rewardUnlocked,
+      rewardRedeemed,
       completedRewards: newCompletedRewards,
       passId: membership.passId,
       merchant,
@@ -187,6 +201,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     progressText: result.progressText,
     rewardUnlocked: result.rewardUnlocked,
+    rewardRedeemed: result.rewardRedeemed,
     completedRewards: result.completedRewards,
   });
 }

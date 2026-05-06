@@ -59,5 +59,6 @@ export interface Transaction {
 export interface ScanResult {
   progressText: string;
   rewardUnlocked: boolean;
+  rewardRedeemed: boolean;
   completedRewards: number;
 }
