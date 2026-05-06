@@ -23,6 +23,7 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
     displayMode: merchant.displayMode,
     passkitProgramId: merchant.passkitProgramId ?? '',
     passkitTierId: merchant.passkitTierId ?? '',
+    merchantInfo: merchant.merchantInfo ?? '',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -243,6 +244,18 @@ export function MerchantSettingsForm({ merchant, onSaved }: Props) {
             placeholder="e.g. 222"
             className={inputClass}
           />
+        </div>
+        <div>
+          <label className={labelClass}>Program Info (معلومات)</label>
+          <textarea
+            value={form.merchantInfo}
+            onChange={(e) => set('merchantInfo', e.target.value)}
+            placeholder="Short description shown on the wallet pass"
+            maxLength={200}
+            rows={2}
+            className={inputClass}
+          />
+          <p className="text-xs text-slate-400 mt-1">Shown as &quot;معلومات&quot; on the customer&apos;s wallet pass</p>
         </div>
       </div>
 

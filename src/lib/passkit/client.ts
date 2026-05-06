@@ -47,25 +47,20 @@ export async function createLoyaltyPass(
 
   if (!programId) throw new Error('No PassKit program ID configured for this merchant');
 
-  const nameParts = (customerName ?? '').trim().split(' ');
-
   const body: Record<string, unknown> = {
     programId,
     tierId,
     externalId: membershipId,
     points: 0,
     person: {
-      // displayName = remaining stamps to reward (as user specified)
-      displayName: String(merchant.stampTarget),
-      forename: nameParts[0] || undefined,
-      surname: nameParts.slice(1).join(' ') || undefined,
+      forename: customerName || undefined,
       mobileNumber: customerPhone || undefined,
     },
     metaData: {
-      customerName: customerName || 'Member',
-      stampProgress: `0 / ${merchant.stampTarget}`,
-      reward: merchant.rewardName,
-      store: merchant.name,
+      customerName: customerName || '',
+      stampProgress: `0/${merchant.stampTarget}`,
+      remainingStamps: String(merchant.stampTarget),
+      programInfo: merchant.merchantInfo || '',
     },
   };
 
@@ -95,35 +90,26 @@ export async function updateLoyaltyPass(
   externalId: string,
   stamps: number,
   stampTarget: number,
-  rewardName: string,
   customerName?: string,
   passkitProgramId?: string,
-  stampImages?: Array<{ strip: string; hero: string } | null>
+  stampImages?: Array<{ strip: string; hero: string } | null>,
+  merchantInfo?: string
 ): Promise<void> {
   const remaining = stampTarget - stamps;
-  const rewardUnlocked = stamps === 0 && remaining === stampTarget;
   const programId = configuredValue(passkitProgramId, process.env.PASSKIT_PROGRAM_ID);
-
-  const nameParts = (customerName ?? '').trim().split(' ');
 
   const body: Record<string, unknown> = {
     programId,
     externalId,
-    // members.member.points = current stamp count
     points: stamps,
     person: {
-      // displayName = remaining stamps to reward (int string) as user specified
-      displayName: rewardUnlocked ? '0' : String(remaining),
-      forename: nameParts[0] || undefined,
-      surname: nameParts.slice(1).join(' ') || undefined,
+      forename: customerName || undefined,
     },
     metaData: {
-      customerName: customerName || undefined,
-      stampProgress: `${stamps} / ${stampTarget}`,
-      reward: rewardName,
-      status: rewardUnlocked
-        ? `Reward unlocked: ${rewardName}!`
-        : `${remaining} more visit${remaining === 1 ? '' : 's'} for ${rewardName}`,
+      customerName: customerName || '',
+      stampProgress: `${stamps}/${stampTarget}`,
+      remainingStamps: String(remaining),
+      programInfo: merchantInfo || '',
     },
   };
 

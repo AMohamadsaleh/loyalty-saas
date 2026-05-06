@@ -13,6 +13,7 @@ export interface Merchant {
   // PassKit — set manually after creating program+tier in PassKit dashboard
   passkitProgramId?: string;
   passkitTierId?: string;
+  merchantInfo?: string;
   // PassKit image IDs per stamp count — strip = Apple Wallet, hero = Google Wallet
   passkitStampImages?: Array<{ strip: string; hero: string } | null>;
 }
